@@ -804,8 +804,12 @@ async def cb_teacher_select(callback: types.CallbackQuery, state: FSMContext):
     await send_schedule(chat_id, url, name, callback.from_user, tur="ustoz")
 
 # ─── XONA ───
-# Xona cache — callback_data limit (64 belgi) uchun index ishlatamiz
+# Cache — callback_data 64 belgi limitini yechish uchun
+_bino_cache: dict = {}   # chat_id -> {idx: bino_name}
 _room_cache: dict = {}   # chat_id -> {idx: (name, url)}
+
+def get_bino(room_key: str) -> str:
+    return room_key.split("-")[0].split("/")[0].strip()
 
 @dp.callback_query(F.data == "menu_rooms")
 async def cb_rooms(callback: types.CallbackQuery):
@@ -813,30 +817,42 @@ async def cb_rooms(callback: types.CallbackQuery):
     xonalar = load_json(XONALAR_JSON)
     if not xonalar:
         await callback.answer("Xonalar ma'lumotlari topilmadi!", show_alert=True); return
-    binolar = set()
-    for room in xonalar:
-        binolar.add(room.split("-")[0].split("/")[0].strip())
+
+    binolar = sorted(set(get_bino(r) for r in xonalar if get_bino(r)),
+                     key=lambda x: (int(x) if x.isdigit() else 999, x))
+
+    # Bino cache
+    _bino_cache[chat_id] = {str(i): b for i, b in enumerate(binolar)}
+
     kb = InlineKeyboardBuilder()
-    for bino in sorted(binolar, key=lambda x: (int(x) if x.isdigit() else 999)):
-        kb.row(types.InlineKeyboardButton(text=f"🏢 {bino}-bino", callback_data=f"bino_{bino[:10]}"))
+    for i, bino in enumerate(binolar):
+        label = f"🏢 {bino}" if len(bino) <= 20 else f"🏢 {bino[:18]}…"
+        kb.row(types.InlineKeyboardButton(text=label, callback_data=f"bi_{i}"))
     kb.row(types.InlineKeyboardButton(text=tr("back", chat_id), callback_data="go_menu"))
     await callback.message.edit_text(tr("select_bino", chat_id), reply_markup=kb.as_markup())
 
-@dp.callback_query(F.data.startswith("bino_"))
+@dp.callback_query(F.data.startswith("bi_"))
 async def cb_bino(callback: types.CallbackQuery):
     chat_id = callback.message.chat.id
-    bino    = callback.data[5:]
-    xonalar = load_json(XONALAR_JSON)
-    rooms   = {n: u for n, u in xonalar.items() if n.split("-")[0].split("/")[0].strip() == bino}
-    if not rooms:
-        await callback.answer("Bo'sh!", show_alert=True); return
+    idx     = callback.data[3:]
+    bino    = (_bino_cache.get(chat_id) or {}).get(idx)
+    if not bino:
+        await callback.answer("Qayta menyudan kirins!", show_alert=True); return
 
-    # Index cache ga saqlash
+    xonalar = load_json(XONALAR_JSON)
+    rooms   = {n: u for n, u in xonalar.items() if get_bino(n) == bino}
+    if not rooms:
+        await callback.answer("Bu binoda xona topilmadi!", show_alert=True); return
+
+    # Xona cache
     _room_cache[chat_id] = {str(i): (n, u) for i, (n, u) in enumerate(sorted(rooms.items()))}
 
     kb = InlineKeyboardBuilder()
     for i, name in enumerate(sorted(rooms.keys())):
-        kb.add(types.InlineKeyboardButton(text=name, callback_data=f"ri_{chat_id}_{i}"))
+        # Xona nomini qisqartirish (faqat ko'rinish uchun)
+        parts = name.split("-")
+        label = "-".join(parts[:3]) if len(parts) >= 3 else name
+        kb.add(types.InlineKeyboardButton(text=label[:20], callback_data=f"ri_{i}"))
     kb.adjust(3)
     kb.row(types.InlineKeyboardButton(text=tr("back", chat_id), callback_data="menu_rooms"))
     await callback.message.edit_text(tr("select_xona", chat_id), reply_markup=kb.as_markup())
@@ -844,19 +860,10 @@ async def cb_bino(callback: types.CallbackQuery):
 @dp.callback_query(F.data.startswith("ri_"))
 async def cb_room_select(callback: types.CallbackQuery):
     chat_id = callback.message.chat.id
-    parts   = callback.data.split("_")
-    # ri_{chat_id}_{idx}
-    try:
-        orig_chat_id = int(parts[1])
-        idx          = parts[2]
-    except:
-        await callback.answer("Xatolik!", show_alert=True); return
-
-    cache = _room_cache.get(orig_chat_id) or _room_cache.get(chat_id, {})
-    entry = cache.get(idx)
+    idx     = callback.data[3:]
+    entry   = (_room_cache.get(chat_id) or {}).get(idx)
     if not entry:
         await callback.answer("Topilmadi! Qayta tanlang.", show_alert=True); return
-
     room_name, url = entry
     await callback.message.delete()
     await send_schedule(chat_id, url, room_name, callback.from_user, tur="xona")
@@ -908,13 +915,13 @@ async def _handle_free(message, state: FSMContext, time_str: str, user: types.Us
     # Bosh xona uchun ham cache
     _room_cache[chat_id] = {}
     idx = 0
-    for bino in sorted(binolar, key=lambda x: (int(x) if x.isdigit() else 999)):
+    for bino in sorted(binolar, key=lambda x: (int(x) if x.isdigit() else 999, x)):
         text += f"🏢 *{bino}-bino:*\n"
         for room in sorted(binolar[bino]):
             text += f"  🚪 {room}\n"
             if xonalar.get(room):
                 _room_cache[chat_id][str(idx)] = (room, xonalar[room])
-                kb.add(types.InlineKeyboardButton(text=f"📅 {room}", callback_data=f"ri_{chat_id}_{idx}"))
+                kb.add(types.InlineKeyboardButton(text=f"📅 {room[:15]}", callback_data=f"ri_{idx}"))
                 idx += 1
         text += "\n"
 
