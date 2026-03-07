@@ -33,49 +33,15 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # ─────────────────────────────────────────
 # SOZLAMALAR
 # ─────────────────────────────────────────
-# ─────────────────────────────────────────
-# SOZLAMALAR
-# ─────────────────────────────────────────
 TOKEN            = os.getenv("BOT_TOKEN")
+SHEET_ID         = os.getenv("SHEET_ID")
+CREDENTIALS_FILE = os.getenv("CREDENTIALS_FILE", "credentials.json")
 ADMIN_IDS        = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
 
-# BU YERDA QAT'IY QILIB ID-NI YOZAMIZ (os.getenv ni vaqtinchalik o'chirib turing)
-SHEET_ID         = "1v-mO5v_O-u8N9N6_uF7vO_MISOL_UCHUN_OZINGIZNIKI" 
-
-# JSON matnini o'zgaruvchidan olamiz
-GOOGLE_JSON_STR  = os.getenv("GOOGLE_CREDENTIALS_JSON")
-
-# DEBUG: Faqat ko'rish uchun (buni o'chirmang)
-print(f"DEBUG: Hozirgi SHEET_ID -> {SHEET_ID}")
-
 if not TOKEN:
-    raise ValueError("BOT_TOKEN topilmadi!")
-
-# Endi bu tekshiruv SHEET_ID ni topadi, chunki uni tepada qo'lda yozdik
-if not SHEET_ID or SHEET_ID == "SIZNING_ID_SHU_YERDA":
-    log.warning("⚠️ SHEET_ID hali ham xato yozilgan!")
-
-# ─────────────────────────────────────────
-# GOOGLE SHEETS ULANISH FUNKSIYASI
-# ─────────────────────────────────────────
-def get_gspread_client():
-    try:
-        # JSON fayl emas, Variable ichidagi matndan o'qiymiz
-        creds_dict = json.loads(GOOGLE_CREDS_JSON)
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        
-        # Aiogram/Gspread uchun avtorizatsiya
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-        client = gspread.authorize(creds)
-        
-        log.info(f"✅ Google Sheets ulandi. ID: {SHEET_ID[:5]}...")
-        return client.open_by_key(SHEET_ID).sheet1
-    except Exception as e:
-        log.error(f"❌ Sheets ulanishda xato: {e}")
-        return None
-
-# Jadvalni ishga tushiramiz
-sheet = get_sheet_client()
+    raise ValueError("BOT_TOKEN .env faylda yoki environment variable da topilmadi!")
+if not SHEET_ID:
+    log.warning("SHEET_ID topilmadi — Google Sheets ishlamaydi")
 
 TALABA_JSON  = "talaba.json"
 USTOZ_JSON   = "ustoz.json"
