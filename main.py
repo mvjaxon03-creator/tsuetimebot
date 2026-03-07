@@ -485,9 +485,38 @@ async def send_schedule(chat_id: int, url: str, name: str,
         add_log(user.id, f"view_{tur}", name)
 
 # ─────────────────────────────────────────
-# BOSH XONA ANIQLASH
+# BOSH XONA ANIQLASH — optimallashtirilgan
 # ─────────────────────────────────────────
+DAY_X  = [55, 145, 235, 325, 415, 505]
+PARA_Y = [250, 414, 578, 742, 906, 1070, 1234, 1398]
+COL_W, ROW_H = 90, 164
+
+def parse_svg_html(html: str) -> dict:
+    """HTML dan bosh/band vaqtlarni aniqlash"""
+    result = {i: list(range(1, 9)) for i in range(6)}
+    soup = BeautifulSoup(html, "html.parser")
+    svg  = soup.find("g", {"id": "PRINT_SCENE_BG_1"})
+    if not svg: return result
+    occupied = set()
+    for rect in svg.find_all("rect"):
+        try:
+            x = float(rect.get("x", 0)); y = float(rect.get("y", 0))
+            w = float(rect.get("width", 0)); h = float(rect.get("height", 0))
+            fill = rect.get("fill", "transparent")
+            if fill in ["transparent", "none", ""] or w < 50 or h < 50: continue
+            for di, dx in enumerate(DAY_X):
+                if abs(x - dx) < COL_W * 0.6:
+                    for pi, py in enumerate(PARA_Y):
+                        if abs(y - py) < ROW_H * 0.6:
+                            occupied.add((di, pi + 1)); break
+                    break
+        except: continue
+    for di in range(6):
+        result[di] = [p for p in range(1, 9) if (di, p) not in occupied]
+    return result
+
 async def parse_free_room(url: str, room_name: str) -> dict:
+    """Eski interfeys — bitta xona uchun (skaner tashqarisida ishlatilsa)"""
     result = {i: list(range(1, 9)) for i in range(6)}
     try:
         async with async_playwright() as p:
@@ -498,37 +527,71 @@ async def parse_free_room(url: str, room_name: str) -> dict:
             await page.goto(url, wait_until="networkidle", timeout=60000)
             html = await page.content()
             await browser.close()
-
-        soup = BeautifulSoup(html, "html.parser")
-        svg  = soup.find("g", {"id": "PRINT_SCENE_BG_1"})
-        if not svg: return result
-
-        DAY_X  = [55, 145, 235, 325, 415, 505]
-        PARA_Y = [250, 414, 578, 742, 906, 1070, 1234, 1398]
-        COL_W, ROW_H = 90, 164
-        occupied = set()
-
-        for rect in svg.find_all("rect"):
-            try:
-                x    = float(rect.get("x", 0))
-                y    = float(rect.get("y", 0))
-                w    = float(rect.get("width", 0))
-                h    = float(rect.get("height", 0))
-                fill = rect.get("fill", "transparent")
-                if fill in ["transparent", "none", ""] or w < 50 or h < 50: continue
-                for di, dx in enumerate(DAY_X):
-                    if abs(x - dx) < COL_W * 0.6:
-                        for pi, py in enumerate(PARA_Y):
-                            if abs(y - py) < ROW_H * 0.6:
-                                occupied.add((di, pi + 1)); break
-                        break
-            except: continue
-
-        for di in range(6):
-            result[di] = [p for p in range(1, 9) if (di, p) not in occupied]
+        return parse_svg_html(html)
     except Exception as e:
         log.error(f"parse_free_room [{room_name}]: {e}")
     return result
+
+async def _scan_page(sem, page, room_name: str, url: str) -> tuple:
+    """Bitta sahifani parallel skanerlash"""
+    async with sem:
+        try:
+            await page.goto(url, wait_until="networkidle", timeout=45000)
+            html = await page.content()
+            return room_name, parse_svg_html(html)
+        except Exception as e:
+            log.error(f"Scan [{room_name}]: {e}")
+            return room_name, {i: list(range(1, 9)) for i in range(6)}
+
+async def job_scan_free_rooms():
+    log.info("Bosh xona skanerlash boshlandi...")
+    xonalar = load_json(XONALAR_JSON)
+    if not xonalar:
+        log.warning("xonalar.json bo'sh"); return
+
+    PARALLEL = 5   # Bir vaqtda 5 ta sahifa — server yukini kamaytirish uchun
+    free_data = {}
+    items = list(xonalar.items())
+
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=True,
+                args=["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"]
+            )
+            sem = asyncio.Semaphore(PARALLEL)
+
+            # Sahifalarni oldindan yaratib qo'yamiz
+            pages = [await browser.new_page(viewport={"width": 800, "height": 600})
+                     for _ in range(PARALLEL)]
+
+            # Batch larga bo'lib ishlaymiz
+            BATCH = 50
+            for batch_start in range(0, len(items), BATCH):
+                batch = items[batch_start:batch_start + BATCH]
+                tasks = []
+                for i, (room_name, url) in enumerate(batch):
+                    page = pages[i % PARALLEL]
+                    tasks.append(_scan_page(sem, page, room_name, url))
+
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                for res in results:
+                    if isinstance(res, tuple):
+                        free_data[res[0]] = res[1]
+
+                done = batch_start + len(batch)
+                log.info(f"Skanerlash: {done}/{len(items)} ta xona")
+                await asyncio.sleep(1)  # serverga nafas berish
+
+            for pg in pages:
+                await pg.close()
+            await browser.close()
+
+    except Exception as e:
+        log.error(f"Scan browser error: {e}")
+
+    save_free_rooms_to_sheets(free_data)
+    log.info(f"Skanerlash tugadi: {len(free_data)} xona")
 
 def save_free_rooms_to_sheets(free_data: dict):
     ws = _sheets.get("free_rooms")
@@ -576,22 +639,7 @@ async def job_send_auto(chat_id: int, url: str, group: str):
     finally:
         if os.path.exists(fname): os.remove(fname)
 
-async def job_scan_free_rooms():
-    log.info("Bosh xona skanerlash boshlandi...")
-    xonalar = load_json(XONALAR_JSON)
-    if not xonalar:
-        log.warning("xonalar.json bo'sh")
-        return
-    free_data, count = {}, 0
-    for room_name, url in xonalar.items():
-        try:
-            free_data[room_name] = await parse_free_room(url, room_name)
-            count += 1
-            await asyncio.sleep(2)
-        except Exception as e:
-            log.error(f"Scan [{room_name}]: {e}")
-    save_free_rooms_to_sheets(free_data)
-    log.info(f"Skanerlash tugadi: {count} xona")
+
 
 def restore_auto_schedules():
     for row in get_auto_schedules():
