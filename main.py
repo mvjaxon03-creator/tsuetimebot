@@ -116,11 +116,22 @@ def init_sheets():
     global _sheets
     if not SHEET_ID: return
     try:
-        if not os.path.exists(CREDENTIALS_FILE):
-            log.warning("credentials.json topilmadi!")
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
+        # 1-usul: Environment variable dan (Railway uchun)
+        creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
+        if creds_json:
+            creds_dict = json.loads(creds_json)
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+            log.info("Sheets: ENV dan ulandi")
+        # 2-usul: Fayldan (lokal uchun)
+        elif os.path.exists(CREDENTIALS_FILE):
+            creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, scope)
+            log.info("Sheets: fayldan ulandi")
+        else:
+            log.warning("credentials.json ham, GOOGLE_CREDENTIALS_JSON ham topilmadi!")
             return
-        scope  = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds  = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, scope)
+
         client = gspread.authorize(creds)
         wb     = client.open_by_key(SHEET_ID)
         existing = [s.title for s in wb.worksheets()]
@@ -793,6 +804,9 @@ async def cb_teacher_select(callback: types.CallbackQuery, state: FSMContext):
     await send_schedule(chat_id, url, name, callback.from_user, tur="ustoz")
 
 # ─── XONA ───
+# Xona cache — callback_data limit (64 belgi) uchun index ishlatamiz
+_room_cache: dict = {}   # chat_id -> {idx: (name, url)}
+
 @dp.callback_query(F.data == "menu_rooms")
 async def cb_rooms(callback: types.CallbackQuery):
     chat_id = callback.message.chat.id
@@ -804,7 +818,7 @@ async def cb_rooms(callback: types.CallbackQuery):
         binolar.add(room.split("-")[0].split("/")[0].strip())
     kb = InlineKeyboardBuilder()
     for bino in sorted(binolar, key=lambda x: (int(x) if x.isdigit() else 999)):
-        kb.row(types.InlineKeyboardButton(text=f"🏢 {bino}-bino", callback_data=f"bino_{bino}"))
+        kb.row(types.InlineKeyboardButton(text=f"🏢 {bino}-bino", callback_data=f"bino_{bino[:10]}"))
     kb.row(types.InlineKeyboardButton(text=tr("back", chat_id), callback_data="go_menu"))
     await callback.message.edit_text(tr("select_bino", chat_id), reply_markup=kb.as_markup())
 
@@ -816,21 +830,34 @@ async def cb_bino(callback: types.CallbackQuery):
     rooms   = {n: u for n, u in xonalar.items() if n.split("-")[0].split("/")[0].strip() == bino}
     if not rooms:
         await callback.answer("Bo'sh!", show_alert=True); return
+
+    # Index cache ga saqlash
+    _room_cache[chat_id] = {str(i): (n, u) for i, (n, u) in enumerate(sorted(rooms.items()))}
+
     kb = InlineKeyboardBuilder()
-    for name in sorted(rooms):
-        kb.add(types.InlineKeyboardButton(text=name, callback_data=f"room_{name[:60]}"))
+    for i, name in enumerate(sorted(rooms.keys())):
+        kb.add(types.InlineKeyboardButton(text=name, callback_data=f"ri_{chat_id}_{i}"))
     kb.adjust(3)
     kb.row(types.InlineKeyboardButton(text=tr("back", chat_id), callback_data="menu_rooms"))
     await callback.message.edit_text(tr("select_xona", chat_id), reply_markup=kb.as_markup())
 
-@dp.callback_query(F.data.startswith("room_"))
+@dp.callback_query(F.data.startswith("ri_"))
 async def cb_room_select(callback: types.CallbackQuery):
-    chat_id   = callback.message.chat.id
-    room_name = callback.data[5:]
-    xonalar   = load_json(XONALAR_JSON)
-    url = xonalar.get(room_name)
-    if not url:
-        await callback.answer("Topilmadi!", show_alert=True); return
+    chat_id = callback.message.chat.id
+    parts   = callback.data.split("_")
+    # ri_{chat_id}_{idx}
+    try:
+        orig_chat_id = int(parts[1])
+        idx          = parts[2]
+    except:
+        await callback.answer("Xatolik!", show_alert=True); return
+
+    cache = _room_cache.get(orig_chat_id) or _room_cache.get(chat_id, {})
+    entry = cache.get(idx)
+    if not entry:
+        await callback.answer("Topilmadi! Qayta tanlang.", show_alert=True); return
+
+    room_name, url = entry
     await callback.message.delete()
     await send_schedule(chat_id, url, room_name, callback.from_user, tur="xona")
 
@@ -877,12 +904,18 @@ async def _handle_free(message, state: FSMContext, time_str: str, user: types.Us
         binolar.setdefault(bino, []).append(room_name)
 
     text = tr("free_title", chat_id, time=time_str)
+
+    # Bosh xona uchun ham cache
+    _room_cache[chat_id] = {}
+    idx = 0
     for bino in sorted(binolar, key=lambda x: (int(x) if x.isdigit() else 999)):
         text += f"🏢 *{bino}-bino:*\n"
         for room in sorted(binolar[bino]):
             text += f"  🚪 {room}\n"
             if xonalar.get(room):
-                kb.add(types.InlineKeyboardButton(text=f"📅 {room}", callback_data=f"room_{room[:60]}"))
+                _room_cache[chat_id][str(idx)] = (room, xonalar[room])
+                kb.add(types.InlineKeyboardButton(text=f"📅 {room}", callback_data=f"ri_{chat_id}_{idx}"))
+                idx += 1
         text += "\n"
 
     kb.adjust(3)
