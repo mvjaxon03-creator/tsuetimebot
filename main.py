@@ -41,7 +41,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 TOKEN = os.getenv("BOT_TOKEN")
 
 # SHEET_ID ni to'g'ridan-to'g'ri shu yerga qo'yamiz
-SHEET_ID = "1A2B3C4D5E6F7G8H9I0J_JADVALINGIZ_ID_SI" 
+SHEET_ID = "1vZLVKA__HPQAL70HfzI0eYu3MpsE-Namho6D-2RLIYw" 
 
 # Muhim o'zgarish: JSON matnini Variable-dan olamiz
 GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON")
