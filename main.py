@@ -33,16 +33,45 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # ─────────────────────────────────────────
 # SOZLAMALAR
 # ─────────────────────────────────────────
-TOKEN            = os.getenv("BOT_TOKEN")
-SHEET_ID         = os.getenv("SHEET_ID")
-print(f"DEBUG: SHEET_ID qiymati -> {SHEET_ID}")
-CREDENTIALS_FILE = os.getenv("CREDENTIALS_FILE", "credentials.json")
-ADMIN_IDS        = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
+# ... importlar qismi tepada qoladi ...
+
+# ─────────────────────────────────────────
+# SOZLAMALAR
+# ─────────────────────────────────────────
+TOKEN = os.getenv("BOT_TOKEN")
+
+# SHEET_ID ni to'g'ridan-to'g'ri shu yerga qo'yamiz
+SHEET_ID = "1A2B3C4D5E6F7G8H9I0J_JADVALINGIZ_ID_SI" 
+
+# Muhim o'zgarish: JSON matnini Variable-dan olamiz
+GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON")
+
+ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
 
 if not TOKEN:
-    raise ValueError("BOT_TOKEN .env faylda yoki environment variable da topilmadi!")
-if not SHEET_ID:
-    log.warning("SHEET_ID topilmadi — Google Sheets ishlamaydi")
+    raise ValueError("BOT_TOKEN topilmadi!")
+
+# ─────────────────────────────────────────
+# GOOGLE SHEETS ULANISH FUNKSIYASI
+# ─────────────────────────────────────────
+def get_gspread_client():
+    try:
+        # JSON fayl emas, Variable ichidagi matndan o'qiymiz
+        creds_dict = json.loads(GOOGLE_CREDS_JSON)
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        
+        # Aiogram/Gspread uchun avtorizatsiya
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        client = gspread.authorize(creds)
+        
+        log.info(f"✅ Google Sheets ulandi. ID: {SHEET_ID[:5]}...")
+        return client.open_by_key(SHEET_ID).sheet1
+    except Exception as e:
+        log.error(f"❌ Sheets ulanishda xato: {e}")
+        return None
+
+# Jadvalni ishga tushiramiz
+sheet = get_sheet_client()
 
 TALABA_JSON  = "talaba.json"
 USTOZ_JSON   = "ustoz.json"
