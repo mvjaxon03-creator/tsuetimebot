@@ -1,0 +1,18 @@
+# Maxfiy fayllar — GitHub ga yuklanmasin!
+.env
+credentials.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Vaqtinchalik fayllar
+*.png
+*.jpg
+/tmp/
