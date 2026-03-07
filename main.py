@@ -35,6 +35,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # ─────────────────────────────────────────
 TOKEN            = os.getenv("BOT_TOKEN")
 SHEET_ID         = os.getenv("SHEET_ID")
+print(f"DEBUG: SHEET_ID qiymati -> {SHEET_ID}")
 CREDENTIALS_FILE = os.getenv("CREDENTIALS_FILE", "credentials.json")
 ADMIN_IDS        = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
 
