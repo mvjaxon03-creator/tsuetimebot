@@ -7,6 +7,3 @@ pytz==2024.1
 beautifulsoup4==4.12.3
 lxml==5.2.2
 python-dotenv==1.0.1
-pydantic==2.6.4
-pydantic-core==2.16.3
-greenlet==3.0.3
