@@ -33,23 +33,27 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # ─────────────────────────────────────────
 # SOZLAMALAR
 # ─────────────────────────────────────────
-# ... importlar qismi tepada qoladi ...
-
 # ─────────────────────────────────────────
 # SOZLAMALAR
 # ─────────────────────────────────────────
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN            = os.getenv("BOT_TOKEN")
+ADMIN_IDS        = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
 
-# SHEET_ID ni to'g'ridan-to'g'ri shu yerga qo'yamiz
-SHEET_ID = "1vZLVKA__HPQAL70HfzI0eYu3MpsE-Namho6D-2RLIYw" 
+# BU YERDA QAT'IY QILIB ID-NI YOZAMIZ (os.getenv ni vaqtinchalik o'chirib turing)
+SHEET_ID         = "1v-mO5v_O-u8N9N6_uF7vO_MISOL_UCHUN_OZINGIZNIKI" 
 
-# Muhim o'zgarish: JSON matnini Variable-dan olamiz
-GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON")
+# JSON matnini o'zgaruvchidan olamiz
+GOOGLE_JSON_STR  = os.getenv("GOOGLE_CREDENTIALS_JSON")
 
-ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
+# DEBUG: Faqat ko'rish uchun (buni o'chirmang)
+print(f"DEBUG: Hozirgi SHEET_ID -> {SHEET_ID}")
 
 if not TOKEN:
     raise ValueError("BOT_TOKEN topilmadi!")
+
+# Endi bu tekshiruv SHEET_ID ni topadi, chunki uni tepada qo'lda yozdik
+if not SHEET_ID or SHEET_ID == "SIZNING_ID_SHU_YERDA":
+    log.warning("⚠️ SHEET_ID hali ham xato yozilgan!")
 
 # ─────────────────────────────────────────
 # GOOGLE SHEETS ULANISH FUNKSIYASI
