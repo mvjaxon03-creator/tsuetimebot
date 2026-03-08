@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Optional
 import pytz
 import gspread
-from dotenv import load_dotenv
 from oauth2client.service_account import ServiceAccountCredentials
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -13,11 +12,6 @@ from aiogram.fsm.state import State, StatesGroup
 from playwright.async_api import async_playwright
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from bs4 import BeautifulSoup
-
-# ─────────────────────────────────────────
-# .env YUKLASH
-# ─────────────────────────────────────────
-load_dotenv()
 
 # ─────────────────────────────────────────
 # LOGS
@@ -33,10 +27,10 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # ─────────────────────────────────────────
 # SOZLAMALAR
 # ─────────────────────────────────────────
-TOKEN            = os.getenv("BOT_TOKEN")
-SHEET_ID         = os.getenv("SHEET_ID")
+TOKEN            = os.getenv("8442363419:AAEboxdLi56dnDT5fIz6x3yA36n37SpcoMs")
+SHEET_ID         = os.getenv("1vZLVKA__HPQAL70HfzI0eYu3MpsE-Namho6D-2RLIYw")
 CREDENTIALS_FILE = os.getenv("CREDENTIALS_FILE", "credentials.json")
-ADMIN_IDS        = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
+ADMIN_IDS        = [int(x) for x in os.getenv("7693087447", "").split(",") if x.strip().isdigit()]
 
 if not TOKEN:
     raise ValueError("BOT_TOKEN .env faylda yoki environment variable da topilmadi!")
