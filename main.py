@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 import pytz
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2.service_account import Credentials
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -120,8 +120,12 @@ def init_sheets():
     global _sheets
     if not SHEET_ID: return
     try:
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(GOOGLE_CREDS_DICT, scope)
+        scope = [
+            "https://spreadsheets.google.com/feeds",
+            "https://www.googleapis.com/auth/drive",
+            "https://www.googleapis.com/auth/spreadsheets"
+        ]
+        creds = Credentials.from_service_account_info(GOOGLE_CREDS_DICT, scopes=scope)
         log.info("Sheets: ulandi")
 
         client = gspread.authorize(creds)
