@@ -28,8 +28,8 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # ─────────────────────────────────────────
 # SOZLAMALAR — barchasi shu yerda
 # ─────────────────────────────────────────
-TOKEN     = "8544087301:AAG5zpzLBbuuLm3khbg4c6_GZcqBgSFFy10"
-SHEET_ID  = "1jte4lP4iWl2BFWPsmOr5PQV5bIfxNPd4ydGT-NlGxjY"
+TOKEN     = "8442363419:AAFkWt3a77-QISXcbNTATPWyCohRUAeUgj4"
+SHEET_ID  = "1fPxXGUxTx6Vc7uyIchkG7Na8mnZk70VJxMGVYicZm64"
 ADMIN_IDS = [7693087447]   # ← o'z Telegram ID ingizni yozing
 
 CREDENTIALS_FILE = "credentials.json"
@@ -121,6 +121,9 @@ def init_sheets():
     global _sheets
     if not SHEET_ID: return
     try:
+        import google.auth.transport.requests
+        from google.oauth2 import service_account
+
         scope = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/drive",
@@ -129,13 +132,10 @@ def init_sheets():
         creds = service_account.Credentials.from_service_account_info(
             GOOGLE_CREDS_DICT, scopes=scope
         )
-        # Token ni yangilash — vaqt sinxronizatsiyasi uchun
-        request = google.auth.transport.requests.Request()
-        creds.refresh(request)
-        log.info("Sheets: ulandi")
+        gc = gspread.Client(auth=creds)
+        gc.session = google.auth.transport.requests.AuthorizedSession(creds)
+        wb = gc.open_by_key(SHEET_ID)
 
-        client = gspread.authorize(creds)
-        wb     = client.open_by_key(SHEET_ID)
         existing = [s.title for s in wb.worksheets()]
         for key, name in SHEET_NAMES.items():
             if name not in existing:
@@ -150,6 +150,7 @@ def init_sheets():
         log.info("Google Sheets ulandi ✅")
     except Exception as e:
         log.error(f"Sheets init error: {e}")
+
 
 def _ensure_header(key: str, headers: list):
     try:
