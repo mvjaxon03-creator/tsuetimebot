@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # SOZLAMALAR — barchasi shu yerda
 # ─────────────────────────────────────────
 TOKEN     = "8442363419:AAFkWt3a77-QISXcbNTATPWyCohRUAeUgj4"
-SHEET_ID  = "1fPxXGUxTx6Vc7uyIchkG7Na8mnZk70VJxMGVYicZm64"
+SHEET_ID  = "1jte4lP4iWl2BFWPsmOr5PQV5bIfxNPd4ydGT-NlGxjY"
 ADMIN_IDS = [7693087447]   # ← o'z Telegram ID ingizni yozing
 
 CREDENTIALS_FILE = "credentials.json"
