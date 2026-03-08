@@ -27,9 +27,9 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # ─────────────────────────────────────────
 # SOZLAMALAR — barchasi shu yerda
 # ─────────────────────────────────────────
-TOKEN     = "8442363419:AAFkWt3a77-QISXcbNTATPWyCohRUAeUgj4"
+TOKEN     = "8442363419:AAHln5Er1KVf2YATURL9aoFMaESR1D5zGAI"
 SHEET_ID  = "1vZLVKA__HPQAL70HfzI0eYu3MpsE-Namho6D-2RLIYw"
-ADMIN_IDS = [7693087447]   # ← o'z Telegram ID ingizni yozing
+ADMIN_IDS = [123456789]   # ← o'z Telegram ID ingizni yozing
 
 CREDENTIALS_FILE = "credentials.json"
 
@@ -676,7 +676,9 @@ async def cb_setlang(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
     chat_id = callback.message.chat.id
     user_lang[chat_id] = callback.data.split("_")[1]
-    await callback.message.edit_text(tr("main_menu", chat_id), reply_markup=menu_kb(chat_id))
+    try:
+        await callback.message.edit_text(tr("main_menu", chat_id), reply_markup=menu_kb(chat_id))
+    except: pass
 
 @dp.callback_query(F.data == "go_menu")
 async def cb_go_menu(callback: types.CallbackQuery, state: FSMContext):
@@ -684,9 +686,11 @@ async def cb_go_menu(callback: types.CallbackQuery, state: FSMContext):
     chat_id = callback.message.chat.id
     try:
         await callback.message.edit_text(tr("main_menu", chat_id), reply_markup=menu_kb(chat_id))
-    except:
-        sent = await callback.message.answer(tr("main_menu", chat_id), reply_markup=menu_kb(chat_id))
-        last_msgs[chat_id] = {"last_msg": sent.message_id}
+    except Exception:
+        try:
+            sent = await callback.message.answer(tr("main_menu", chat_id), reply_markup=menu_kb(chat_id))
+            last_msgs[chat_id] = {"last_msg": sent.message_id}
+        except: pass
 
 # ─── TALABA ───
 @dp.callback_query(F.data == "menu_student")
