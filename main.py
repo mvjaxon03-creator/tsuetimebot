@@ -371,7 +371,7 @@ async def take_screenshot(url: str, filename: str):
     async with async_playwright() as p:
         browser = await p.chromium.launch(
             headless=True,
-            args=["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"]
+            args=["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--single-process", "--no-zygote", "--disable-setuid-sandbox", "--memory-pressure-off", "--js-flags=--max-old-space-size=256"]
         )
         page = await browser.new_page(viewport={"width": 1280, "height": 800}, device_scale_factor=2)
         try:
@@ -490,7 +490,7 @@ async def job_scan_free_rooms():
     xonalar = load_json(XONALAR_JSON)
     if not xonalar:
         log.warning("xonalar.json bo'sh"); return
-    PARALLEL = 5
+    PARALLEL = 2
     free_data = {}
     items = list(xonalar.items())
     try:
@@ -500,7 +500,7 @@ async def job_scan_free_rooms():
             )
             sem   = asyncio.Semaphore(PARALLEL)
             pages = [await browser.new_page(viewport={"width": 800, "height": 600}) for _ in range(PARALLEL)]
-            BATCH = 50
+            BATCH = 20
             for batch_start in range(0, len(items), BATCH):
                 batch   = items[batch_start:batch_start + BATCH]
                 tasks   = [_scan_page(sem, pages[i % PARALLEL], rn, url) for i, (rn, url) in enumerate(batch)]
