@@ -28,22 +28,22 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # SOZLAMALAR — barchasi shu yerda
 # ─────────────────────────────────────────
 TOKEN     = "8442363419:AAFkWt3a77-QISXcbNTATPWyCohRUAeUgj4"
-SHEET_ID  = "1vZLVKA__HPQAL70HfzI0eYu3MpsE-Namho6D-2RLIYw"
+SHEET_ID  = "1fPxXGUxTx6Vc7uyIchkG7Na8mnZk70VJxMGVYicZm64"
 ADMIN_IDS = [7693087447]   # ← o'z Telegram ID ingizni yozing
 
 CREDENTIALS_FILE = "credentials.json"
 
 GOOGLE_CREDS_DICT = {
     "type": "service_account",
-    "project_id": "tsuebaza",
-    "private_key_id": "f6ce26b4270e74d332e2521f32b1e36708709f32",
-    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC6xxzpzHtF93hgg1SVXOg8oqhxIMAT93a9H8JmXwbuO9FIEc5Vac9L+vHxR4XzIYUWT54qreoU03uGVJs3HuaOq+cMfKW/vUeDoy8XMDWb1sMys6l88zoMPjl4qTOMuspHwElhxHMQzCqrzvIGsGU2/lnYo6dT1X7V2M5Sy1ELeNMlrN5VjzqrzpnZo592violqgarJmLFwuZTDiZBS0ziery7ENxJYHlSXtKSesh6Kr/HCw9FmtCvTY24bAGPiJ7rTguqr/Bd9p3nT8orGYTmYMWdufMrJAaOxvPi4g3+wAh1yPKjYhAk9N2UaYlZhpwgGYJG6zcHP3FZAfy8h4tJAgMBAAECggEAC8FQWTPyEOXnAPFYYiDQylAqbcRJPSMhU/yAYv+uvfusdkQN9Q44amhxexAB/DAAjPZB1snPUQmRB/6h2NxBrSULNkaktTvtGPnXkuFeiQpWirBdWxcrxhgnIdL0WEfBR2FwvOMnosesFS1sdMNRUMln+jHX7CIkXhfLvyY7WY9gxOlOS3QRCd52Mr+LkZ7KHsPl8gqPsD7e3UNqJj/6gJf9tXa+1H37moPjT8nxjNnm164mWRVxTzzJ8+W/W5wSOIOewSGZtFQwnuiK3GkB0CPQgb8dqlu8udcGbnzeZ4wnibqEQD+AkJyWHq+lf6j8ok1F+GEFD2JPMEXWXR/X6QKBgQD3Gz2Pks7z+utCeF/IYZMUkS0qFxFUdveBCLMMkqWI9U2OrPC9k5XZgFoB4+ZZVbgjCWdHF0WezHGKa7g7gFBLXisXFcWmpI4pLnK2ZXLl9NeSNGBXjz3ELQTooKWOK6NzKtnYz82r/xvlH4F7/o1E4iB8sK+XBPRrZvbeFIgh3wKBgQDBgAYX+MRiIMLlxCF6PjEuzmoddiKaXEpFi8F2WKhzFN4sGlhKsyz4wA0kiC/OAxclhJoZFFHRpGpRS1BkCSG0IWaHN4FNyJmYJ85cfse1bD36gP/wVyr18XndkTorDv2wm906LWIb5XnhySopSVvMzBFAfO5zQVl4O/ZEf3oH1wKBgQClGDQXGpTeeUR5UodcD6T+1sgAGQ1hC2LteOx3d/rU+F9q9ayaXGJ/wLtiC+u4wAaYkg3Id4nyQNGTE8kxJ9d9o1rSv58gaUz5wqitqDYN4XmtmwTLO06fJRzkd4Bk7k70ASsvKhdV1MnEWTpfp4CnBxWBeWK3WX4by90gH0OcrQKBgQCUZzLFOdasB8JSY+zlC0O/STIbbFo3luajlf8HXBG9SVjn7ECg8fBgyzKJPSWk07vx21QwPeROa9HajW+XeWVu+FrhA5HY7SvXhVgAmn9iRiT2te8VDlV1kQDNDK/XDEVHKRMvplTjXkjvANCkH44XcL8efXKH1KvgyeQjPr2BuwKBgCpzMaE2EFz3U94HGKpkmiDHRA8Y8vba/351dwuLX8WgqBFmhAvCMqI1IznSTGzBNUvKf0N7Ubwj2NkLzgYDWApDVlLhNAn2Z7BGqf6zrdUy8y7P/LK2BIGRwGHnVdOUAsjUyQIynfGGFj8NxFbxAN25mWEGUpHo4C7eJAbzfCsd\n-----END PRIVATE KEY-----\n",
-    "client_email": "tsuebaza@tsuebaza.iam.gserviceaccount.com",
-    "client_id": "115326693502707680364",
+    "project_id": "master-shard-489601-d2",
+    "private_key_id": "0a8ab1ccf66959acfb9d38681e7b553a2579ebb7",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDDCW+F8FQvlseW6kZEE0/GEJsS7lxSeBUJuE6AKszRxN/cMrhuXwtW2qZXuYodFD5LfrF+XPpjdiu5408bKytE6S0kH+/dGPSNQEHv3g+giJJBsdNLBSVjz/ZcxmDlAfmbTAPPK8Qx+ceCpt43FK2yXCiEwZNrfmoMxxDMxbNl9cb2IEFlLo+ePzW/nPU04ejnfsFZ7AGUMIFHUtrRmozNG9tGxy+hbX2Soih/w1b3ul/QgrW3u7M9Zat7n4YUGEjFovqpG+y41PSZ9WibgVGyF1nHd6d0kKDn4s8haZYJhXRuydk0+plwTsVc/cRuF/9n/n+N7ySvCIx78IYS1B5RAgMBAAECggEASZJ7oVjhSPpl3AYP74ohY6PL+74y0WE+/mWqJyr+DHtpvtTbQbdUvbTJXvo8oW+LeEsYhYRpZ6+iGwMmSidksSAMyT3K6+qIBeihduyblIEwOtvryrbsPdSrKKAk2P5/vBdWsIXgAsIogp6T4M9KHqgpGLs08y3Cr4NAUR6a5/DADozN3xfKBFfqTVzJgZLYZI0bXx3vOZi4c7s2UrIQLHzDEtTpEzQV8MVFiLJz909ea0tb7Np8MrERXeUlgmb8bS1dI3ulch6bi+UGanqdSiEWm1bH5PFpPKa5WH1yLfE1Tf8sdBmFNq8/J8sRiUCx+OXi0Kvt8J1hRp2/J5dTCQKBgQDqn53Xj4jhLEKRKjlDlxbm6iqEa4wvLQfPZerd9BUbtdxX27k6V2wQ+iFhNPBa4f+sQ/BNU5t6gVeq1A9Q/uuk0riEvA36BnOPWp8/raBsaTBxPQryCB6AWXr9/hWKeGsXNoUL+vc9lpcPlH/5Dm6piajVZ1CuU8IVNSrSqWxNhwKBgQDUzn74nMe9BiDbyLLBuapZFSatGIbmD9hMBcbnCaFUXCQ+EEgNMAXYJ/iwHib1Rg2mHzlMqGdJ2Y3Dh0qV4ydkYyWrCgUi9EeyjcKzB9aqyotnE4Mv8teVxqJoCpeNx17Me9dtCOjGHOWlrjUrnHGcrmRKAgQkwJjaRY97z7rrZwKBgDaEOCzqUSfhHOaWJRArf0rQhmiWhNBBalsql1RTbsQtkbFogLWpspaPSEpJ/r9fXAUvFBsjnjDs9O3gsF5lnWODAxT0jVrXPOrGZ9JoCaqnFnZ5dJ2gfVXddNKnw2GVcWzHYkrSWbiZ0SfxnXrFe7kxH2XWx8x58dLzs6uXam7pAoGAOHr99BoYYTDpM6wW1ZfjgHU+qJ5j31fBPpwh6FwD95HlBJvpo6ZlRrOFK6k1CdAn+zk6SgBAObeGCqkzwIhjgh9WdgjYyCgxh1BcpoukC/xp91eUb/tyAIyRui9lffm2TWtpB8VfkoVE5i5QalzBQqZ+c64JT3/Wkcf4hxHhOG0CgYB1bZt/6ez3aWQ6yCpA4wtJZXPbrbKgRg6Q6iMuglRrTGr1VDkhLq3owmpgk5cpUQ2sqiuh4uun7pVXktENAAFYQaLQre0HoSuzJvgAAJhbGggJPDFvLGzyXWxcYfH3/mz/+Srq8pi4U3D8cyc4v5WSNlzjzDeJ7RYFSkFCNmkTgg==\n-----END PRIVATE KEY-----\n",
+    "client_email": "tsuetimebot@master-shard-489601-d2.iam.gserviceaccount.com",
+    "client_id": "110330596905730931650",
     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
     "token_uri": "https://oauth2.googleapis.com/token",
     "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/tsuebaza%40tsuebaza.iam.gserviceaccount.com",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/tsuetimebot%40master-shard-489601-d2.iam.gserviceaccount.com",
     "universe_domain": "googleapis.com"
 }
 
