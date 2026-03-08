@@ -3,7 +3,8 @@ from datetime import datetime
 from typing import Optional
 import pytz
 import gspread
-from google.oauth2.service_account import Credentials
+from google.oauth2 import service_account
+import google.auth.transport.requests
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -27,7 +28,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # ─────────────────────────────────────────
 # SOZLAMALAR — barchasi shu yerda
 # ─────────────────────────────────────────
-TOKEN     = "8442363419:AAFkWt3a77-QISXcbNTATPWyCohRUAeUgj4"
+TOKEN     = "8544087301:AAG5zpzLBbuuLm3khbg4c6_GZcqBgSFFy10"
 SHEET_ID  = "1jte4lP4iWl2BFWPsmOr5PQV5bIfxNPd4ydGT-NlGxjY"
 ADMIN_IDS = [7693087447]   # ← o'z Telegram ID ingizni yozing
 
@@ -125,7 +126,12 @@ def init_sheets():
             "https://www.googleapis.com/auth/drive",
             "https://www.googleapis.com/auth/spreadsheets"
         ]
-        creds = Credentials.from_service_account_info(GOOGLE_CREDS_DICT, scopes=scope)
+        creds = service_account.Credentials.from_service_account_info(
+            GOOGLE_CREDS_DICT, scopes=scope
+        )
+        # Token ni yangilash — vaqt sinxronizatsiyasi uchun
+        request = google.auth.transport.requests.Request()
+        creds.refresh(request)
         log.info("Sheets: ulandi")
 
         client = gspread.authorize(creds)
