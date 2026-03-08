@@ -1,10 +1,7 @@
-import json, asyncio, os, logging, warnings, time, re
+import json, asyncio, os, logging, warnings, time, re, sqlite3
 from datetime import datetime
 from typing import Optional
 import pytz
-import gspread
-from google.oauth2 import service_account
-import google.auth.transport.requests
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -29,51 +26,30 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # SOZLAMALAR — barchasi shu yerda
 # ─────────────────────────────────────────
 TOKEN     = "8442363419:AAFkWt3a77-QISXcbNTATPWyCohRUAeUgj4"
-SHEET_ID  = "1fPxXGUxTx6Vc7uyIchkG7Na8mnZk70VJxMGVYicZm64"
 ADMIN_IDS = [7693087447]   # ← o'z Telegram ID ingizni yozing
-
-CREDENTIALS_FILE = "credentials.json"
-
-GOOGLE_CREDS_DICT = {
-    "type": "service_account",
-    "project_id": "master-shard-489601-d2",
-    "private_key_id": "0a8ab1ccf66959acfb9d38681e7b553a2579ebb7",
-    "private_key": '-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDDCW+F8FQvlseW\n6kZEE0/GEJsS7lxSeBUJuE6AKszRxN/cMrhuXwtW2qZXuYodFD5LfrF+XPpjdiu5\n408bKytE6S0kH+/dGPSNQEHv3g+giJJBsdNLBSVjz/ZcxmDlAfmbTAPPK8Qx+ceC\npt43FK2yXCiEwZNrfmoMxxDMxbNl9cb2IEFlLo+ePzW/nPU04ejnfsFZ7AGUMIFH\nUtrRmozNG9tGxy+hbX2Soih/w1b3ul/QgrW3u7M9Zat7n4YUGEjFovqpG+y41PSZ\n9WibgVGyF1nHd6d0kKDn4s8haZYJhXRuydk0+plwTsVc/cRuF/9n/n+N7ySvCIx7\n8IYS1B5RAgMBAAECggEASZJ7oVjhSPpl3AYP74ohY6PL+74y0WE+/mWqJyr+DHtp\nvtTbQbdUvbTJXvo8oW+LeEsYhYRpZ6+iGwMmSidksSAMyT3K6+qIBeihduyblIEw\nOtvryrbsPdSrKKAk2P5/vBdWsIXgAsIogp6T4M9KHqgpGLs08y3Cr4NAUR6a5/DA\nDozN3xfKBFfqTVzJgZLYZI0bXx3vOZi4c7s2UrIQLHzDEtTpEzQV8MVFiLJz909e\na0tb7Np8MrERXeUlgmb8bS1dI3ulch6bi+UGanqdSiEWm1bH5PFpPKa5WH1yLfE1\nTf8sdBmFNq8/J8sRiUCx+OXi0Kvt8J1hRp2/J5dTCQKBgQDqn53Xj4jhLEKRKjlD\nlxbm6iqEa4wvLQfPZerd9BUbtdxX27k6V2wQ+iFhNPBa4f+sQ/BNU5t6gVeq1A9Q\n/uuk0riEvA36BnOPWp8/raBsaTBxPQryCB6AWXr9/hWKeGsXNoUL+vc9lpcPlH/5\nDm6piajVZ1CuU8IVNSrSqWxNhwKBgQDUzn74nMe9BiDbyLLBuapZFSatGIbmD9hM\nBcbnCaFUXCQ+EEgNMAXYJ/iwHib1Rg2mHzlMqGdJ2Y3Dh0qV4ydkYyWrCgUi9Eey\njcKzB9aqyotnE4Mv8teVxqJoCpeNx17Me9dtCOjGHOWlrjUrnHGcrmRKAgQkwJja\nRY97z7rrZwKBgDaEOCzqUSfhHOaWJRArf0rQhmiWhNBBalsql1RTbsQtkbFogLWp\nspaPSEpJ/r9fXAUvFBsjnjDs9O3gsF5lnWODAxT0jVrXPOrGZ9JoCaqnFnZ5dJ2g\nfVXddNKnw2GVcWzHYkrSWbiZ0SfxnXrFe7kxH2XWx8x58dLzs6uXam7pAoGAOHr9\n9BoYYTDpM6wW1ZfjgHU+qJ5j31fBPpwh6FwD95HlBJvpo6ZlRrOFK6k1CdAn+zk6\nSgBAObeGCqkzwIhjgh9WdgjYyCgxh1BcpoukC/xp91eUb/tyAIyRui9lffm2TWtp\nB8VfkoVE5i5QalzBQqZ+c64JT3/Wkcf4hxHhOG0CgYB1bZt/6ez3aWQ6yCpA4wtJ\nZXPbrbKgRg6Q6iMuglRrTGr1VDkhLq3owmpgk5cpUQ2sqiuh4uun7pVXktENAAFY\nQaLQre0HoSuzJvgAAJhbGggJPDFvLGzyXWxcYfH3/mz/+Srq8pi4U3D8cyc4v5WS\nNlzjzDeJ7RYFSkFCNmkTgg==\n-----END PRIVATE KEY-----\n',
-    "client_email": "tsuetimebot@master-shard-489601-d2.iam.gserviceaccount.com",
-    "client_id": "110330596905730931650",
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/tsuetimebot%40master-shard-489601-d2.iam.gserviceaccount.com",
-    "universe_domain": "googleapis.com"
-}
 
 TALABA_JSON  = "talaba.json"
 USTOZ_JSON   = "ustoz.json"
 XONALAR_JSON = "xonalar.json"
+DB_FILE      = "/data/bot.db"   # Railway Volume
 
 TASHKENT_TZ = pytz.timezone("Asia/Tashkent")
 
 PARA_TIMES = {
-    1: ("08:30", "09:50"),
-    2: ("10:00", "11:20"),
-    3: ("11:30", "12:50"),
-    4: ("13:30", "14:50"),
-    5: ("15:00", "16:20"),
-    6: ("16:30", "17:50"),
-    7: ("18:00", "19:20"),
-    8: ("19:30", "20:50"),
+    1: ("08:30", "09:50"), 2: ("10:00", "11:20"),
+    3: ("11:30", "12:50"), 4: ("13:30", "14:50"),
+    5: ("15:00", "16:20"), 6: ("16:30", "17:50"),
+    7: ("18:00", "19:20"), 8: ("19:30", "20:50"),
 }
-
 DAYS_UZ = {0:"Dushanba",1:"Seshanba",2:"Chorshanba",3:"Payshanba",4:"Juma",5:"Shanba",6:"Yakshanba"}
 DAYS_RU = {0:"Понедельник",1:"Вторник",2:"Среда",3:"Четверг",4:"Пятница",5:"Суббота",6:"Воскресенье"}
 
 # ─────────────────────────────────────────
 # BOT & DISPATCHER
 # ─────────────────────────────────────────
-bot       = Bot(token=TOKEN)
-dp        = Dispatcher()
-scheduler = AsyncIOScheduler(timezone=TASHKENT_TZ)
+bot        = Bot(token=TOKEN)
+dp         = Dispatcher()
+scheduler  = AsyncIOScheduler(timezone=TASHKENT_TZ)
 BOT_START_TIME = datetime.now(TASHKENT_TZ)
 
 # ─────────────────────────────────────────
@@ -102,162 +78,171 @@ screenshot_cache: dict = {}
 user_lang: dict        = {}
 last_msgs: dict        = {}
 pending_save: dict     = {}
+_bino_cache: dict      = {}
+_room_cache: dict      = {}
 
 # ─────────────────────────────────────────
-# GOOGLE SHEETS
+# SQLITE DATABASE
 # ─────────────────────────────────────────
-_sheets: dict = {}
+def get_db():
+    os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
+    return sqlite3.connect(DB_FILE)
 
-SHEET_NAMES = {
-    "users":      "foydalanuvchilar",
-    "auto":       "guruh_avto",
-    "teachers":   "ustozlar",
-    "free_rooms": "bosh_xonalar",
-    "logs":       "loglar",
-    "saved":      "saqlangan_jadvallar",
-}
-
-def init_sheets():
-    global _sheets
-    if not SHEET_ID: return
+def init_db():
     try:
-        import google.auth.transport.requests
-        from google.oauth2 import service_account
-
-        scope = [
-            "https://spreadsheets.google.com/feeds",
-            "https://www.googleapis.com/auth/drive",
-            "https://www.googleapis.com/auth/spreadsheets"
-        ]
-        creds = service_account.Credentials.from_service_account_info(
-            GOOGLE_CREDS_DICT, scopes=scope
-        )
-        gc = gspread.Client(auth=creds)
-        gc.session = google.auth.transport.requests.AuthorizedSession(creds)
-        wb = gc.open_by_key(SHEET_ID)
-
-        existing = [s.title for s in wb.worksheets()]
-        for key, name in SHEET_NAMES.items():
-            if name not in existing:
-                wb.add_worksheet(title=name, rows=2000, cols=20)
-            _sheets[key] = wb.worksheet(name)
-        _ensure_header("users",      ["Vaqt","UserID","Username","Ism","Tur","Ma'lumot","URL"])
-        _ensure_header("auto",       ["ChatID","ChatTitle","GroupName","URL","Kun","Vaqt","QoshilganVaqt"])
-        _ensure_header("teachers",   ["Vaqt","UserID","Username","Ism","Ustoz","URL"])
-        _ensure_header("free_rooms", ["Sana","Xona","Bino","VaqtOraliqi","Para"])
-        _ensure_header("logs",       ["Vaqt","UserID","Action","Ma'lumot"])
-        _ensure_header("saved",      ["UserID","Nom","URL","Tur","QoshilganVaqt"])
-        log.info("Google Sheets ulandi ✅")
+        con = get_db()
+        cur = con.cursor()
+        cur.executescript("""
+            CREATE TABLE IF NOT EXISTS users (
+                user_id TEXT PRIMARY KEY,
+                username TEXT, full_name TEXT,
+                tur TEXT, malumot TEXT, url TEXT,
+                updated_at TEXT
+            );
+            CREATE TABLE IF NOT EXISTS auto_schedules (
+                chat_id TEXT PRIMARY KEY,
+                chat_title TEXT, group_name TEXT,
+                url TEXT, day INTEGER, vaqt TEXT,
+                created_at TEXT
+            );
+            CREATE TABLE IF NOT EXISTS saved_schedules (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT, nom TEXT, url TEXT,
+                tur TEXT, created_at TEXT
+            );
+            CREATE TABLE IF NOT EXISTS free_rooms (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sana TEXT, xona TEXT, bino TEXT,
+                vaqt_oralig TEXT, para INTEGER
+            );
+            CREATE TABLE IF NOT EXISTS logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                vaqt TEXT, user_id TEXT,
+                action TEXT, data TEXT
+            );
+        """)
+        con.commit()
+        con.close()
+        log.info("SQLite DB tayyor ✅")
     except Exception as e:
-        log.error(f"Sheets init error: {e}")
+        log.error(f"DB init error: {e}")
 
-
-def _ensure_header(key: str, headers: list):
+def db_save_user(user: types.User, tur: str, malumot: str, url: str):
     try:
-        ws = _sheets.get(key)
-        if not ws: return
-        if not ws.row_values(1):
-            ws.append_row(headers)
+        now = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y %H:%M:%S")
+        uname = f"@{user.username}" if user.username else "-"
+        con = get_db(); cur = con.cursor()
+        cur.execute("""INSERT INTO users VALUES (?,?,?,?,?,?,?)
+            ON CONFLICT(user_id) DO UPDATE SET
+            username=excluded.username, full_name=excluded.full_name,
+            tur=excluded.tur, malumot=excluded.malumot,
+            url=excluded.url, updated_at=excluded.updated_at""",
+            (str(user.id), uname, user.full_name, tur, malumot, url, now))
+        con.commit(); con.close()
+    except Exception as e:
+        log.error(f"db_save_user: {e}")
+
+def db_save_teacher(user: types.User, teacher: str, url: str):
+    db_save_user(user, "ustoz", teacher, url)
+
+def db_save_auto(chat_id, chat_title, group, url, day, vaqt):
+    try:
+        now = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y %H:%M:%S")
+        con = get_db(); cur = con.cursor()
+        cur.execute("""INSERT INTO auto_schedules VALUES (?,?,?,?,?,?,?)
+            ON CONFLICT(chat_id) DO UPDATE SET
+            chat_title=excluded.chat_title, group_name=excluded.group_name,
+            url=excluded.url, day=excluded.day, vaqt=excluded.vaqt""",
+            (str(chat_id), chat_title, group, url, day, vaqt, now))
+        con.commit(); con.close()
+    except Exception as e:
+        log.error(f"db_save_auto: {e}")
+
+def db_get_autos():
+    try:
+        con = get_db(); cur = con.cursor()
+        cur.execute("SELECT * FROM auto_schedules")
+        rows = cur.fetchall(); con.close()
+        return rows
+    except: return []
+
+def db_delete_auto(chat_id):
+    try:
+        con = get_db(); cur = con.cursor()
+        cur.execute("DELETE FROM auto_schedules WHERE chat_id=?", (str(chat_id),))
+        con.commit(); con.close()
+    except Exception as e:
+        log.error(f"db_delete_auto: {e}")
+
+def db_add_log(user_id, action, data=""):
+    try:
+        now = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y %H:%M:%S")
+        con = get_db(); cur = con.cursor()
+        cur.execute("INSERT INTO logs (vaqt,user_id,action,data) VALUES (?,?,?,?)",
+                    (now, str(user_id), action, data))
+        con.commit(); con.close()
     except: pass
 
-def sheet_append(key: str, row: list):
+def db_get_saved(user_id):
     try:
-        ws = _sheets.get(key)
-        if ws: ws.append_row(row)
-    except Exception as e:
-        log.error(f"Sheet write [{key}]: {e}")
-
-def save_user(user: types.User, tur: str, malumot: str, url: str):
-    ws = _sheets.get("users")
-    if not ws: return
-    try:
-        now   = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y %H:%M:%S")
-        uname = f"@{user.username}" if user.username else "-"
-        row   = [now, str(user.id), uname, user.full_name, tur, malumot, url]
-        ids   = ws.col_values(2)
-        if str(user.id) in ids:
-            ws.update(f"A{ids.index(str(user.id))+1}:G{ids.index(str(user.id))+1}", [row])
-        else:
-            ws.append_row(row)
-    except Exception as e:
-        log.error(f"save_user: {e}")
-
-def save_teacher_visit(user: types.User, teacher: str, url: str):
-    ws = _sheets.get("teachers")
-    if not ws: return
-    try:
-        now   = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y %H:%M:%S")
-        uname = f"@{user.username}" if user.username else "-"
-        row   = [now, str(user.id), uname, user.full_name, teacher, url]
-        ids   = ws.col_values(2)
-        if str(user.id) in ids:
-            ws.update(f"A{ids.index(str(user.id))+1}:F{ids.index(str(user.id))+1}", [row])
-        else:
-            ws.append_row(row)
-    except Exception as e:
-        log.error(f"save_teacher: {e}")
-
-def save_auto_schedule(chat_id: int, chat_title: str, group: str, url: str, day: int, vaqt: str):
-    ws = _sheets.get("auto")
-    if not ws: return
-    try:
-        now = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y %H:%M:%S")
-        row = [str(chat_id), chat_title, group, url, str(day), vaqt, now]
-        ids = ws.col_values(1)
-        if str(chat_id) in ids:
-            ws.update(f"A{ids.index(str(chat_id))+1}:G{ids.index(str(chat_id))+1}", [row])
-        else:
-            ws.append_row(row)
-    except Exception as e:
-        log.error(f"save_auto: {e}")
-
-def get_auto_schedules() -> list:
-    ws = _sheets.get("auto")
-    if not ws: return []
-    try:
-        return [r for r in ws.get_all_values()[1:] if len(r) >= 6 and r[0]]
+        con = get_db(); cur = con.cursor()
+        cur.execute("SELECT nom,url,tur FROM saved_schedules WHERE user_id=?", (str(user_id),))
+        rows = cur.fetchall(); con.close()
+        return rows
     except: return []
 
-def add_log(user_id: int, action: str, data: str = ""):
-    now = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y %H:%M:%S")
-    sheet_append("logs", [now, str(user_id), action, data])
-
-# ─────────────────────────────────────────
-# SAQLANGAN JADVALLAR
-# ─────────────────────────────────────────
-def get_saved_schedules(user_id: int) -> list:
-    ws = _sheets.get("saved")
-    if not ws: return []
-    try:
-        return [(r[1], r[2], r[3]) for r in ws.get_all_values()[1:] if r and r[0] == str(user_id)]
-    except: return []
-
-def save_schedule(user_id: int, nom: str, url: str, tur: str):
-    ws = _sheets.get("saved")
-    if not ws: return
+def db_save_schedule(user_id, nom, url, tur):
     try:
         now = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y %H:%M:%S")
-        ws.append_row([str(user_id), nom, url, tur, now])
+        con = get_db(); cur = con.cursor()
+        cur.execute("INSERT INTO saved_schedules (user_id,nom,url,tur,created_at) VALUES (?,?,?,?,?)",
+                    (str(user_id), nom, url, tur, now))
+        con.commit(); con.close()
     except Exception as e:
-        log.error(f"save_schedule: {e}")
+        log.error(f"db_save_schedule: {e}")
 
-def delete_saved_schedule(user_id: int, nom: str):
-    ws = _sheets.get("saved")
-    if not ws: return
+def db_delete_saved(user_id, nom):
     try:
-        rows = ws.get_all_values()
-        for i, r in enumerate(rows):
-            if r and r[0] == str(user_id) and r[1] == nom:
-                ws.delete_rows(i + 1)
-                break
+        con = get_db(); cur = con.cursor()
+        cur.execute("DELETE FROM saved_schedules WHERE user_id=? AND nom=?", (str(user_id), nom))
+        con.commit(); con.close()
     except Exception as e:
-        log.error(f"delete_saved: {e}")
+        log.error(f"db_delete_saved: {e}")
 
-def get_all_user_ids() -> list:
-    ws = _sheets.get("users")
-    if not ws: return []
+def db_get_all_user_ids():
     try:
-        return [int(i) for i in ws.col_values(2)[1:] if i.strip().isdigit()]
+        con = get_db(); cur = con.cursor()
+        cur.execute("SELECT user_id FROM users")
+        rows = [int(r[0]) for r in cur.fetchall()]
+        con.close(); return rows
+    except: return []
+
+def db_save_free_rooms(free_data: dict):
+    try:
+        today = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y")
+        con = get_db(); cur = con.cursor()
+        cur.execute("DELETE FROM free_rooms WHERE sana=?", (today,))
+        rows = []
+        for room, days in free_data.items():
+            bino = room.split("-")[0].split("/")[0].strip()
+            for day_idx, paras in days.items():
+                for para in paras:
+                    s, e = PARA_TIMES[para]
+                    rows.append((today, room, bino, f"{s}-{e}", para))
+        cur.executemany("INSERT INTO free_rooms (sana,xona,bino,vaqt_oralig,para) VALUES (?,?,?,?,?)", rows)
+        con.commit(); con.close()
+        log.info(f"Bosh xonalar saqlandi: {len(rows)} yozuv")
+    except Exception as e:
+        log.error(f"db_save_free_rooms: {e}")
+
+def db_get_free_rooms(time_str: str):
+    try:
+        today = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y")
+        con = get_db(); cur = con.cursor()
+        cur.execute("SELECT xona,bino,para FROM free_rooms WHERE sana=? AND vaqt_oralig=?",
+                    (today, time_str))
+        rows = cur.fetchall(); con.close()
+        return rows
     except: return []
 
 # ─────────────────────────────────────────
@@ -286,21 +271,13 @@ T = {
         "select_kurs":   "📖 Kursni tanlang:",
         "select_group":  "👥 Guruhni tanlang:",
         "teacher_ask":   "👨‍🏫 Ustoz ismini yozing:\n(masalan: Karimov Sherali)",
-        "teacher_found": "✅ Topildi! Yuklanmoqda...",
         "teacher_not":   "❌ Ustoz topilmadi. Qayta urinib ko'ring.",
         "teachers_list": "Bir nechta ustoz topildi:\n\n",
         "select_bino":   "🏢 Binoni tanlang:",
         "select_xona":   "🚪 Xonani tanlang:",
-        "free_ask":      (
-            "⏰ Qaysi vaqtga bosh xona izlaysiz?\n\n"
-            "Format: 13:30-14:50\n\n"
-            "Mavjud paralar:\n"
-            "1️⃣ 08:30-09:50\n2️⃣ 10:00-11:20\n3️⃣ 11:30-12:50\n"
-            "4️⃣ 13:30-14:50\n5️⃣ 15:00-16:20\n6️⃣ 16:30-17:50\n"
-            "7️⃣ 18:00-19:20\n8️⃣ 19:30-20:50"
-        ),
+        "free_ask":      "⏰ Qaysi vaqtga bosh xona izlaysiz?\n\nMavjud paralar:\n1️⃣ 08:30-09:50\n2️⃣ 10:00-11:20\n3️⃣ 11:30-12:50\n4️⃣ 13:30-14:50\n5️⃣ 15:00-16:20\n6️⃣ 16:30-17:50\n7️⃣ 18:00-19:20\n8️⃣ 19:30-20:50",
         "free_invalid":  "❌ Format noto'g'ri. Masalan: 13:30-14:50",
-        "free_none":     "😔 Bu vaqtga bosh xona topilmadi yoki ma'lumotlar yangilanmagan.\n\n💡 Admin /scan_rooms bilan yangilay oladi.",
+        "free_none":     "😔 Bu vaqtga bosh xona topilmadi.\n\n💡 Admin /scan_rooms bilan yangilay oladi.",
         "free_title":    "🔍 *{time}* ga bosh xonalar:\n\n",
         "loading":       "⏳ Yuklanmoqda...",
         "error":         "❌ Xatolik yuz berdi. Qaytadan urinib ko'ring.",
@@ -330,21 +307,13 @@ T = {
         "select_kurs":   "📖 Выберите курс:",
         "select_group":  "👥 Выберите группу:",
         "teacher_ask":   "👨‍🏫 Введите имя преподавателя:\n(пример: Karimov Sherali)",
-        "teacher_found": "✅ Найдено! Загружается...",
         "teacher_not":   "❌ Преподаватель не найден. Попробуйте снова.",
         "teachers_list": "Найдено несколько преподавателей:\n\n",
         "select_bino":   "🏢 Выберите корпус:",
         "select_xona":   "🚪 Выберите кабинет:",
-        "free_ask":      (
-            "⏰ На какое время ищете свободный кабинет?\n\n"
-            "Формат: 13:30-14:50\n\n"
-            "Доступные пары:\n"
-            "1️⃣ 08:30-09:50\n2️⃣ 10:00-11:20\n3️⃣ 11:30-12:50\n"
-            "4️⃣ 13:30-14:50\n5️⃣ 15:00-16:20\n6️⃣ 16:30-17:50\n"
-            "7️⃣ 18:00-19:20\n8️⃣ 19:30-20:50"
-        ),
+        "free_ask":      "⏰ На какое время ищете свободный кабинет?\n\nДоступные пары:\n1️⃣ 08:30-09:50\n2️⃣ 10:00-11:20\n3️⃣ 11:30-12:50\n4️⃣ 13:30-14:50\n5️⃣ 15:00-16:20\n6️⃣ 16:30-17:50\n7️⃣ 18:00-19:20\n8️⃣ 19:30-20:50",
         "free_invalid":  "❌ Неверный формат. Пример: 13:30-14:50",
-        "free_none":     "😔 Свободных кабинетов не найдено или данные не обновлены.\n\n💡 Администратор может обновить командой /scan_rooms.",
+        "free_none":     "😔 Свободных кабинетов не найдено.\n\n💡 Администратор может обновить командой /scan_rooms.",
         "free_title":    "🔍 *{time}* — свободные кабинеты:\n\n",
         "loading":       "⏳ Загружается...",
         "error":         "❌ Произошла ошибка. Попробуйте снова.",
@@ -387,9 +356,7 @@ def menu_kb(chat_id: int):
         types.InlineKeyboardButton(text=T[lg]["rooms"],      callback_data="menu_rooms"),
         types.InlineKeyboardButton(text=T[lg]["free_rooms"], callback_data="menu_free"),
     )
-    kb.row(
-        types.InlineKeyboardButton(text=T[lg]["my_saved"],   callback_data="menu_saved"),
-    )
+    kb.row(types.InlineKeyboardButton(text=T[lg]["my_saved"], callback_data="menu_saved"))
     return kb.as_markup()
 
 def back_kb(chat_id: int, cb: str = "go_menu"):
@@ -436,9 +403,6 @@ async def get_photo_id(chat_id: int, url: str) -> Optional[str]:
     finally:
         if os.path.exists(fname): os.remove(fname)
 
-# ─────────────────────────────────────────
-# XABAR O'CHIRISH
-# ─────────────────────────────────────────
 async def delete_last(chat_id: int):
     for key in ["last_pic", "last_msg"]:
         mid = last_msgs.get(chat_id, {}).get(key)
@@ -447,22 +411,17 @@ async def delete_last(chat_id: int):
             except: pass
             last_msgs.setdefault(chat_id, {})[key] = None
 
-# ─────────────────────────────────────────
-# JADVAL YUBORISH
-# ─────────────────────────────────────────
 async def send_schedule(chat_id: int, url: str, name: str,
-                         user: types.User = None, tur: str = "talaba"):
+                        user: types.User = None, tur: str = "talaba"):
     last_msgs.setdefault(chat_id, {})
     await delete_last(chat_id)
     lg = lang(chat_id)
     status = await bot.send_message(chat_id, T[lg]["loading"])
-
     kb = InlineKeyboardBuilder()
     if user and tur in ("talaba", "ustoz"):
         pending_save[user.id] = {"name": name, "url": url, "tur": tur}
         kb.row(types.InlineKeyboardButton(text=T[lg]["saved_btn"], callback_data="dosave_prompt"))
     kb.row(types.InlineKeyboardButton(text=T[lg]["menu_btn"], callback_data="go_menu"))
-
     try:
         fid = await get_photo_id(chat_id, url)
         if fid:
@@ -480,22 +439,20 @@ async def send_schedule(chat_id: int, url: str, name: str,
     finally:
         try: await status.delete()
         except: pass
-
     if user:
-        if tur == "talaba":   save_user(user, tur, name, url)
-        elif tur == "ustoz":  save_teacher_visit(user, name, url)
-        elif tur == "xona":   save_user(user, tur, name, url)
-        add_log(user.id, f"view_{tur}", name)
+        if tur == "talaba":  db_save_user(user, tur, name, url)
+        elif tur == "ustoz": db_save_teacher(user, name, url)
+        elif tur == "xona":  db_save_user(user, tur, name, url)
+        db_add_log(user.id, f"view_{tur}", name)
 
 # ─────────────────────────────────────────
-# BOSH XONA ANIQLASH — optimallashtirilgan
+# BOSH XONA
 # ─────────────────────────────────────────
 DAY_X  = [55, 145, 235, 325, 415, 505]
 PARA_Y = [250, 414, 578, 742, 906, 1070, 1234, 1398]
 COL_W, ROW_H = 90, 164
 
 def parse_svg_html(html: str) -> dict:
-    """HTML dan bosh/band vaqtlarni aniqlash"""
     result = {i: list(range(1, 9)) for i in range(6)}
     soup = BeautifulSoup(html, "html.parser")
     svg  = soup.find("g", {"id": "PRINT_SCENE_BG_1"})
@@ -518,25 +475,7 @@ def parse_svg_html(html: str) -> dict:
         result[di] = [p for p in range(1, 9) if (di, p) not in occupied]
     return result
 
-async def parse_free_room(url: str, room_name: str) -> dict:
-    """Eski interfeys — bitta xona uchun (skaner tashqarisida ishlatilsa)"""
-    result = {i: list(range(1, 9)) for i in range(6)}
-    try:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=True, args=["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"]
-            )
-            page = await browser.new_page(viewport={"width": 1280, "height": 800})
-            await page.goto(url, wait_until="networkidle", timeout=60000)
-            html = await page.content()
-            await browser.close()
-        return parse_svg_html(html)
-    except Exception as e:
-        log.error(f"parse_free_room [{room_name}]: {e}")
-    return result
-
 async def _scan_page(sem, page, room_name: str, url: str) -> tuple:
-    """Bitta sahifani parallel skanerlash"""
     async with sem:
         try:
             await page.goto(url, wait_until="networkidle", timeout=45000)
@@ -551,79 +490,31 @@ async def job_scan_free_rooms():
     xonalar = load_json(XONALAR_JSON)
     if not xonalar:
         log.warning("xonalar.json bo'sh"); return
-
-    PARALLEL = 5   # Bir vaqtda 5 ta sahifa — server yukini kamaytirish uchun
+    PARALLEL = 5
     free_data = {}
     items = list(xonalar.items())
-
     try:
         async with async_playwright() as p:
             browser = await p.chromium.launch(
-                headless=True,
-                args=["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"]
+                headless=True, args=["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"]
             )
-            sem = asyncio.Semaphore(PARALLEL)
-
-            # Sahifalarni oldindan yaratib qo'yamiz
-            pages = [await browser.new_page(viewport={"width": 800, "height": 600})
-                     for _ in range(PARALLEL)]
-
-            # Batch larga bo'lib ishlaymiz
+            sem   = asyncio.Semaphore(PARALLEL)
+            pages = [await browser.new_page(viewport={"width": 800, "height": 600}) for _ in range(PARALLEL)]
             BATCH = 50
             for batch_start in range(0, len(items), BATCH):
-                batch = items[batch_start:batch_start + BATCH]
-                tasks = []
-                for i, (room_name, url) in enumerate(batch):
-                    page = pages[i % PARALLEL]
-                    tasks.append(_scan_page(sem, page, room_name, url))
-
+                batch   = items[batch_start:batch_start + BATCH]
+                tasks   = [_scan_page(sem, pages[i % PARALLEL], rn, url) for i, (rn, url) in enumerate(batch)]
                 results = await asyncio.gather(*tasks, return_exceptions=True)
                 for res in results:
-                    if isinstance(res, tuple):
-                        free_data[res[0]] = res[1]
-
-                done = batch_start + len(batch)
-                log.info(f"Skanerlash: {done}/{len(items)} ta xona")
-                await asyncio.sleep(1)  # serverga nafas berish
-
-            for pg in pages:
-                await pg.close()
+                    if isinstance(res, tuple): free_data[res[0]] = res[1]
+                log.info(f"Skanerlash: {batch_start+len(batch)}/{len(items)}")
+                await asyncio.sleep(1)
+            for pg in pages: await pg.close()
             await browser.close()
-
     except Exception as e:
-        log.error(f"Scan browser error: {e}")
-
-    save_free_rooms_to_sheets(free_data)
+        log.error(f"Scan error: {e}")
+    db_save_free_rooms(free_data)
     log.info(f"Skanerlash tugadi: {len(free_data)} xona")
-
-def save_free_rooms_to_sheets(free_data: dict):
-    ws = _sheets.get("free_rooms")
-    if not ws: return
-    try:
-        today = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y")
-        all_rows = ws.get_all_values()
-        to_delete = [i+1 for i, r in enumerate(all_rows[1:], 1) if r and r[0] == today]
-        for idx in reversed(to_delete): ws.delete_rows(idx)
-        rows = []
-        for room, days in free_data.items():
-            bino = room.split("-")[0].split("/")[0].strip()
-            for day_idx, paras in days.items():
-                for para in paras:
-                    s, e = PARA_TIMES[para]
-                    rows.append([today, room, bino, f"{s}-{e}", str(para)])
-        if rows: ws.append_rows(rows)
-        log.info(f"Bosh xonalar saqlandi: {len(rows)} yozuv")
-    except Exception as e:
-        log.error(f"save_free_rooms: {e}")
-
-def get_free_rooms_by_time(time_str: str) -> list:
-    ws = _sheets.get("free_rooms")
-    if not ws: return []
-    try:
-        today = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y")
-        return [(r[1], r[2], r[4]) for r in ws.get_all_values()[1:]
-                if len(r) >= 5 and r[0] == today and r[3] == time_str]
-    except: return []
 
 # ─────────────────────────────────────────
 # AVTO JADVAL
@@ -642,10 +533,8 @@ async def job_send_auto(chat_id: int, url: str, group: str):
     finally:
         if os.path.exists(fname): os.remove(fname)
 
-
-
 def restore_auto_schedules():
-    for row in get_auto_schedules():
+    for row in db_get_autos():
         try:
             chat_id = int(row[0]); group = row[2]; url = row[3]
             day = int(row[4]); vaqt = row[5]
@@ -658,9 +547,6 @@ def restore_auto_schedules():
         except Exception as e:
             log.error(f"Restore auto: {e}")
 
-# ─────────────────────────────────────────
-# ADMIN YORDAMCHISI
-# ─────────────────────────────────────────
 def is_admin(user_id: int) -> bool:
     return user_id in ADMIN_IDS
 
@@ -668,7 +554,6 @@ def is_admin(user_id: int) -> bool:
 # H A N D L E R L A R
 # ═══════════════════════════════════════════
 
-# ─── /start ───
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
@@ -679,8 +564,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
         types.InlineKeyboardButton(text="🇺🇿 O'zbek",  callback_data="setlang_uz"),
         types.InlineKeyboardButton(text="🇷🇺 Русский", callback_data="setlang_ru"),
     )
-    sent = await message.answer("🌐 Tilni tanlang / Выберите язык:", reply_markup=kb.as_markup())
-    last_msgs[message.chat.id] = {"last_msg": sent.message_id}
+    await message.answer("🌐 Tilni tanlang / Выберите язык:", reply_markup=kb.as_markup())
 
 @dp.callback_query(F.data.startswith("setlang_"))
 async def cb_setlang(callback: types.CallbackQuery, state: FSMContext):
@@ -697,10 +581,9 @@ async def cb_go_menu(callback: types.CallbackQuery, state: FSMContext):
     chat_id = callback.message.chat.id
     try:
         await callback.message.edit_text(tr("main_menu", chat_id), reply_markup=menu_kb(chat_id))
-    except Exception:
+    except:
         try:
-            sent = await callback.message.answer(tr("main_menu", chat_id), reply_markup=menu_kb(chat_id))
-            last_msgs[chat_id] = {"last_msg": sent.message_id}
+            await callback.message.answer(tr("main_menu", chat_id), reply_markup=menu_kb(chat_id))
         except: pass
 
 # ─── TALABA ───
@@ -710,7 +593,7 @@ async def cb_student(callback: types.CallbackQuery):
     data = load_json(TALABA_JSON)
     kb   = InlineKeyboardBuilder()
     for fak in data.keys():
-        kb.row(types.InlineKeyboardButton(text=fak.upper(), callback_data=f"fak_{fak}"))
+        kb.row(types.InlineKeyboardButton(text=fak.upper(), callback_data=f"fak_{fak[:30]}"))
     kb.row(types.InlineKeyboardButton(text=tr("back", chat_id), callback_data="go_menu"))
     await callback.message.edit_text(tr("select_fak", chat_id), reply_markup=kb.as_markup())
 
@@ -719,9 +602,11 @@ async def cb_fak(callback: types.CallbackQuery):
     chat_id = callback.message.chat.id
     fak  = callback.data[4:]
     data = load_json(TALABA_JSON)
-    kb   = InlineKeyboardBuilder()
-    for kurs in data.get(fak, {}).keys():
-        kb.row(types.InlineKeyboardButton(text=kurs, callback_data=f"kurs_{fak}||{kurs}"))
+    # To'liq fak nomini topamiz
+    real_fak = next((f for f in data if f[:30] == fak), fak)
+    kb = InlineKeyboardBuilder()
+    for kurs in data.get(real_fak, {}).keys():
+        kb.row(types.InlineKeyboardButton(text=kurs, callback_data=f"kurs_{real_fak[:25]}||{kurs}"))
     kb.row(types.InlineKeyboardButton(text=tr("back", chat_id), callback_data="menu_student"))
     await callback.message.edit_text(tr("select_kurs", chat_id), reply_markup=kb.as_markup())
 
@@ -729,28 +614,30 @@ async def cb_fak(callback: types.CallbackQuery):
 async def cb_kurs(callback: types.CallbackQuery):
     chat_id = callback.message.chat.id
     _, rest = callback.data.split("_", 1)
-    fak, kurs = rest.split("||")
-    data   = load_json(TALABA_JSON)
-    groups = data.get(fak, {}).get(kurs, {})
-    kb     = InlineKeyboardBuilder()
+    fak_short, kurs = rest.split("||")
+    data = load_json(TALABA_JSON)
+    real_fak = next((f for f in data if f[:25] == fak_short), fak_short)
+    groups = data.get(real_fak, {}).get(kurs, {})
+    kb = InlineKeyboardBuilder()
     for g in groups.keys():
-        kb.add(types.InlineKeyboardButton(text=g, callback_data=f"grp_{fak}||{kurs}||{g}"))
+        kb.add(types.InlineKeyboardButton(text=g, callback_data=f"grp_{real_fak[:20]}||{kurs}||{g}"))
     kb.adjust(3)
-    kb.row(types.InlineKeyboardButton(text=tr("back", chat_id), callback_data=f"fak_{fak}"))
+    kb.row(types.InlineKeyboardButton(text=tr("back", chat_id), callback_data=f"fak_{real_fak[:30]}"))
     await callback.message.edit_text(tr("select_group", chat_id), reply_markup=kb.as_markup())
 
 @dp.callback_query(F.data.startswith("grp_"))
 async def cb_group(callback: types.CallbackQuery, state: FSMContext):
     chat_id = callback.message.chat.id
     _, rest = callback.data.split("_", 1)
-    fak, kurs, group = rest.split("||")
+    parts = rest.split("||")
+    fak_short, kurs, group = parts[0], parts[1], parts[2]
     data = load_json(TALABA_JSON)
-    url  = data.get(fak, {}).get(kurs, {}).get(group)
+    real_fak = next((f for f in data if f[:20] == fak_short), fak_short)
+    url = data.get(real_fak, {}).get(kurs, {}).get(group)
     if not url:
         await callback.answer("Xatolik!", show_alert=True); return
-
     if callback.message.chat.type in ["group", "supergroup"]:
-        await state.update_data(url=url, group=group, fak=fak)
+        await state.update_data(url=url, group=group)
         lg   = lang(chat_id)
         days = DAYS_UZ if lg == "uz" else DAYS_RU
         kb   = InlineKeyboardBuilder()
@@ -791,14 +678,14 @@ async def msg_autotime(message: types.Message, state: FSMContext):
 
 async def _finalize_auto(message, state: FSMContext, vaqt: str, chat):
     chat_id = chat.id
-    data  = await state.get_data()
-    day   = int(data["day"]); url = data["url"]; group = data["group"]
-    h, m  = map(int, vaqt.split(":"))
+    data    = await state.get_data()
+    day = int(data["day"]); url = data["url"]; group = data["group"]
+    h, m = map(int, vaqt.split(":"))
     job_id = f"auto_{chat_id}"
     if scheduler.get_job(job_id): scheduler.remove_job(job_id)
     scheduler.add_job(job_send_auto, "cron", day_of_week=day, hour=h, minute=m,
                       args=[chat_id, url, group], id=job_id)
-    save_auto_schedule(chat_id, getattr(chat, "title", ""), group, url, day, vaqt)
+    db_save_auto(chat_id, getattr(chat, "title", ""), group, url, day, vaqt)
     lg   = lang(chat_id)
     days = DAYS_UZ if lg == "uz" else DAYS_RU
     await message.answer(tr("auto_saved", chat_id, day=days[day], time=vaqt), parse_mode="Markdown")
@@ -818,51 +705,42 @@ async def msg_teacher_search(message: types.Message, state: FSMContext):
     chat_id  = message.chat.id
     query    = message.text.strip()
     ustozlar = load_json(USTOZ_JSON)
-
-    # To'g'ri moslik
     for name, url in ustozlar.items():
         if query.lower() == name.lower():
             await state.clear()
             await send_schedule(chat_id, url, name, message.from_user, tur="ustoz")
             return
-
-    # Qisman moslik
     matches = [(n, u) for n, u in ustozlar.items() if query.lower() in n.lower()]
-
     if not matches:
         await message.answer(tr("teacher_not", chat_id)); return
-
     if len(matches) == 1:
         await state.clear()
         await send_schedule(chat_id, matches[0][1], matches[0][0], message.from_user, tur="ustoz")
         return
-
+    # Cache ga saqlash
+    _room_cache[f"t_{chat_id}"] = {str(i): (n, u) for i, (n, u) in enumerate(matches[:10])}
     kb = InlineKeyboardBuilder()
-    for name, _ in matches[:10]:
-        kb.row(types.InlineKeyboardButton(text=name, callback_data=f"tchr_{name[:60]}"))
+    for i, (name, _) in enumerate(matches[:10]):
+        kb.row(types.InlineKeyboardButton(text=name[:40], callback_data=f"ti_{i}"))
     kb.row(types.InlineKeyboardButton(text=tr("back", chat_id), callback_data="go_menu"))
     await message.answer(
         tr("teachers_list", chat_id) + "\n".join(m[0] for m in matches[:10]),
         reply_markup=kb.as_markup()
     )
 
-@dp.callback_query(F.data.startswith("tchr_"))
+@dp.callback_query(F.data.startswith("ti_"))
 async def cb_teacher_select(callback: types.CallbackQuery, state: FSMContext):
     chat_id = callback.message.chat.id
-    name    = callback.data[5:]
-    ustozlar = load_json(USTOZ_JSON)
-    url = ustozlar.get(name)
-    if not url:
+    idx     = callback.data[3:]
+    entry   = (_room_cache.get(f"t_{chat_id}") or {}).get(idx)
+    if not entry:
         await callback.answer("Topilmadi!", show_alert=True); return
+    name, url = entry
     await state.clear()
     await callback.message.delete()
     await send_schedule(chat_id, url, name, callback.from_user, tur="ustoz")
 
 # ─── XONA ───
-# Cache — callback_data 64 belgi limitini yechish uchun
-_bino_cache: dict = {}   # chat_id -> {idx: bino_name}
-_room_cache: dict = {}   # chat_id -> {idx: (name, url)}
-
 def get_bino(room_key: str) -> str:
     return room_key.split("-")[0].split("/")[0].strip()
 
@@ -872,13 +750,9 @@ async def cb_rooms(callback: types.CallbackQuery):
     xonalar = load_json(XONALAR_JSON)
     if not xonalar:
         await callback.answer("Xonalar ma'lumotlari topilmadi!", show_alert=True); return
-
     binolar = sorted(set(get_bino(r) for r in xonalar if get_bino(r)),
                      key=lambda x: (int(x) if x.isdigit() else 999, x))
-
-    # Bino cache
     _bino_cache[chat_id] = {str(i): b for i, b in enumerate(binolar)}
-
     kb = InlineKeyboardBuilder()
     for i, bino in enumerate(binolar):
         label = f"🏢 {bino}" if len(bino) <= 20 else f"🏢 {bino[:18]}…"
@@ -892,19 +766,14 @@ async def cb_bino(callback: types.CallbackQuery):
     idx     = callback.data[3:]
     bino    = (_bino_cache.get(chat_id) or {}).get(idx)
     if not bino:
-        await callback.answer("Qayta menyudan kirins!", show_alert=True); return
-
+        await callback.answer("Qayta menyudan kiring!", show_alert=True); return
     xonalar = load_json(XONALAR_JSON)
     rooms   = {n: u for n, u in xonalar.items() if get_bino(n) == bino}
     if not rooms:
         await callback.answer("Bu binoda xona topilmadi!", show_alert=True); return
-
-    # Xona cache
     _room_cache[chat_id] = {str(i): (n, u) for i, (n, u) in enumerate(sorted(rooms.items()))}
-
     kb = InlineKeyboardBuilder()
     for i, name in enumerate(sorted(rooms.keys())):
-        # Xona nomini qisqartirish (faqat ko'rinish uchun)
         parts = name.split("-")
         label = "-".join(parts[:3]) if len(parts) >= 3 else name
         kb.add(types.InlineKeyboardButton(text=label[:20], callback_data=f"ri_{i}"))
@@ -950,24 +819,19 @@ async def msg_free_time(message: types.Message, state: FSMContext):
 async def _handle_free(message, state: FSMContext, time_str: str, user: types.User):
     chat_id = message.chat.id
     await state.clear()
-    rooms = get_free_rooms_by_time(time_str)
+    rooms = db_get_free_rooms(time_str)
     kb    = InlineKeyboardBuilder()
-
     if not rooms:
         kb.row(types.InlineKeyboardButton(text=tr("back", chat_id), callback_data="menu_free"))
         kb.row(types.InlineKeyboardButton(text=tr("menu_btn", chat_id), callback_data="go_menu"))
         try: await message.edit_text(tr("free_none", chat_id), reply_markup=kb.as_markup())
         except: await message.answer(tr("free_none", chat_id), reply_markup=kb.as_markup())
         return
-
     xonalar = load_json(XONALAR_JSON)
     binolar: dict = {}
     for room_name, bino, para in rooms:
         binolar.setdefault(bino, []).append(room_name)
-
     text = tr("free_title", chat_id, time=time_str)
-
-    # Bosh xona uchun ham cache
     _room_cache[chat_id] = {}
     idx = 0
     for bino in sorted(binolar, key=lambda x: (int(x) if x.isdigit() else 999, x)):
@@ -979,14 +843,12 @@ async def _handle_free(message, state: FSMContext, time_str: str, user: types.Us
                 kb.add(types.InlineKeyboardButton(text=f"📅 {room[:15]}", callback_data=f"ri_{idx}"))
                 idx += 1
         text += "\n"
-
     kb.adjust(3)
     kb.row(types.InlineKeyboardButton(text=tr("back", chat_id), callback_data="menu_free"))
     kb.row(types.InlineKeyboardButton(text=tr("menu_btn", chat_id), callback_data="go_menu"))
-
-    try: await message.edit_text(text, reply_markup=kb.as_markup(), parse_mode="Markdown")
-    except: await message.answer(text, reply_markup=kb.as_markup(), parse_mode="Markdown")
-    add_log(user.id, "free_rooms_search", time_str)
+    try: await message.edit_text(text[:4096], reply_markup=kb.as_markup(), parse_mode="Markdown")
+    except: await message.answer(text[:4096], reply_markup=kb.as_markup(), parse_mode="Markdown")
+    db_add_log(user.id, "free_rooms_search", time_str)
 
 # ─── SAQLASH ───
 @dp.callback_query(F.data == "dosave_prompt")
@@ -998,7 +860,7 @@ async def cb_dosave_prompt(callback: types.CallbackQuery, state: FSMContext):
     default = pending_save[uid]["name"]
     await state.set_state(SaveFlow.naming)
     kb = InlineKeyboardBuilder()
-    kb.row(types.InlineKeyboardButton(text=f"✅ {default}", callback_data="dosave_default"))
+    kb.row(types.InlineKeyboardButton(text=f"✅ {default[:30]}", callback_data="dosave_default"))
     kb.row(types.InlineKeyboardButton(text=tr("back", chat_id), callback_data="go_menu"))
     await callback.message.answer(
         tr("save_ask_name", chat_id, default=default),
@@ -1011,7 +873,7 @@ async def cb_dosave_default(callback: types.CallbackQuery, state: FSMContext):
     if uid not in pending_save:
         await callback.answer("Xatolik!", show_alert=True); return
     info = pending_save.pop(uid)
-    save_schedule(uid, info["name"], info["url"], info["tur"])
+    db_save_schedule(uid, info["name"], info["url"], info["tur"])
     await state.clear()
     await callback.message.edit_text(
         tr("save_ok", callback.message.chat.id, name=info["name"]),
@@ -1026,7 +888,7 @@ async def msg_save_name(message: types.Message, state: FSMContext):
     if uid not in pending_save:
         await message.answer("Xatolik!"); await state.clear(); return
     info = pending_save.pop(uid)
-    save_schedule(uid, nom, info["url"], info["tur"])
+    db_save_schedule(uid, nom, info["url"], info["tur"])
     await state.clear()
     await message.answer(tr("save_ok", chat_id, name=nom),
                          reply_markup=back_kb(chat_id), parse_mode="Markdown")
@@ -1035,24 +897,21 @@ async def msg_save_name(message: types.Message, state: FSMContext):
 async def cb_menu_saved(callback: types.CallbackQuery):
     chat_id = callback.message.chat.id
     uid     = callback.from_user.id
-    saved   = get_saved_schedules(uid)
-
+    saved   = db_get_saved(uid)
     if not saved:
         kb = InlineKeyboardBuilder()
         kb.row(types.InlineKeyboardButton(text=tr("menu_btn", chat_id), callback_data="go_menu"))
         await callback.message.edit_text(tr("save_empty", chat_id), reply_markup=kb.as_markup())
         return
-
     pending_save[f"list_{uid}"] = saved
-    lg   = lang(chat_id)
-    text = T[lg]["save_list"]
-    kb   = InlineKeyboardBuilder()
+    lg = lang(chat_id); text = T[lg]["save_list"]
+    kb = InlineKeyboardBuilder()
     for i, (nom, url, tur) in enumerate(saved):
         icon = "🎓" if tur == "talaba" else "👨‍🏫" if tur == "ustoz" else "🚪"
         text += f"{icon} {nom}\n"
         kb.row(
             types.InlineKeyboardButton(text=f"📅 {nom[:20]}", callback_data=f"svopen_{i}"),
-            types.InlineKeyboardButton(text="🗑",              callback_data=f"svdel_{nom[:30]}"),
+            types.InlineKeyboardButton(text="🗑", callback_data=f"svdel_{nom[:30]}"),
         )
     kb.row(types.InlineKeyboardButton(text=tr("menu_btn", chat_id), callback_data="go_menu"))
     await callback.message.edit_text(text, reply_markup=kb.as_markup())
@@ -1062,7 +921,7 @@ async def cb_svopen(callback: types.CallbackQuery):
     chat_id = callback.message.chat.id
     uid     = callback.from_user.id
     idx     = int(callback.data.split("_")[1])
-    saved   = pending_save.get(f"list_{uid}") or get_saved_schedules(uid)
+    saved   = pending_save.get(f"list_{uid}") or db_get_saved(uid)
     if idx >= len(saved):
         await callback.answer("Topilmadi!", show_alert=True); return
     nom, url, tur = saved[idx]
@@ -1074,10 +933,10 @@ async def cb_svdel(callback: types.CallbackQuery):
     chat_id = callback.message.chat.id
     uid     = callback.from_user.id
     nom     = callback.data[6:]
-    delete_saved_schedule(uid, nom)
+    db_delete_saved(uid, nom)
     pending_save.pop(f"list_{uid}", None)
     await callback.answer(tr("save_deleted", chat_id, name=nom), show_alert=True)
-    saved = get_saved_schedules(uid)
+    saved = db_get_saved(uid)
     if not saved:
         kb = InlineKeyboardBuilder()
         kb.row(types.InlineKeyboardButton(text=tr("menu_btn", chat_id), callback_data="go_menu"))
@@ -1091,7 +950,7 @@ async def cb_svdel(callback: types.CallbackQuery):
         text += f"{icon} {n}\n"
         kb.row(
             types.InlineKeyboardButton(text=f"📅 {n[:20]}", callback_data=f"svopen_{i}"),
-            types.InlineKeyboardButton(text="🗑",              callback_data=f"svdel_{n[:30]}"),
+            types.InlineKeyboardButton(text="🗑", callback_data=f"svdel_{n[:30]}"),
         )
     kb.row(types.InlineKeyboardButton(text=tr("menu_btn", chat_id), callback_data="go_menu"))
     await callback.message.edit_text(text, reply_markup=kb.as_markup())
@@ -1102,23 +961,18 @@ async def cmd_broadcast(message: types.Message, state: FSMContext):
     if not is_admin(message.from_user.id): return
     await _broadcast_prompt(message, state)
 
-async def _broadcast_prompt(message, state: FSMContext):
+async def _broadcast_prompt(msg_or_cb, state: FSMContext):
     await state.set_state(BroadcastFlow.waiting)
     kb = InlineKeyboardBuilder()
     kb.row(types.InlineKeyboardButton(text="❌ Bekor qilish", callback_data="broadcast_cancel"))
-    text = (
-        "📢 *Broadcast rejimi*\n\n"
-        "Quyidagilardan birini yuboring:\n"
-        "• Matn xabar\n• Rasm + matn\n• Hujjat/fayl\n• Kanaldan forward\n\n"
-        "Barcha foydalanuvchilarga yuboriladi!"
-    )
-    try: await message.edit_text(text, reply_markup=kb.as_markup(), parse_mode="Markdown")
-    except: await message.answer(text, reply_markup=kb.as_markup(), parse_mode="Markdown")
+    text = "📢 *Broadcast rejimi*\n\nXabar, rasm, video yoki forward yuboring.\nBarcha foydalanuvchilarga yuboriladi!"
+    try: await msg_or_cb.edit_text(text, reply_markup=kb.as_markup(), parse_mode="Markdown")
+    except: await msg_or_cb.answer(text, reply_markup=kb.as_markup(), parse_mode="Markdown")
 
 @dp.callback_query(F.data == "broadcast_cancel")
 async def cb_broadcast_cancel(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
-    await callback.message.edit_text("❌ Broadcast bekor qilindi.",
+    await callback.message.edit_text("❌ Bekor qilindi.",
                                       reply_markup=back_kb(callback.message.chat.id, "adm_menu"))
 
 @dp.message(BroadcastFlow.waiting)
@@ -1126,49 +980,31 @@ async def broadcast_receive(message: types.Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         await state.clear(); return
     await state.clear()
-    user_ids = get_all_user_ids()
+    user_ids = db_get_all_user_ids()
     if not user_ids:
         await message.answer("❌ Foydalanuvchilar topilmadi!"); return
-
     status = await message.answer(f"⏳ Yuborilmoqda... 0/{len(user_ids)}")
     ok, fail = 0, 0
-
     for uid in user_ids:
         try:
-            if message.forward_origin or message.forward_from or message.forward_from_chat:
-                await bot.forward_message(uid, message.chat.id, message.message_id)
-            elif message.photo:
-                await bot.send_photo(uid, message.photo[-1].file_id,
-                                     caption=message.caption or "", parse_mode="Markdown")
+            if message.photo:
+                await bot.send_photo(uid, message.photo[-1].file_id, caption=message.caption or "")
             elif message.video:
-                await bot.send_video(uid, message.video.file_id,
-                                     caption=message.caption or "", parse_mode="Markdown")
+                await bot.send_video(uid, message.video.file_id, caption=message.caption or "")
             elif message.document:
-                await bot.send_document(uid, message.document.file_id,
-                                        caption=message.caption or "", parse_mode="Markdown")
-            elif message.voice:
-                await bot.send_voice(uid, message.voice.file_id)
-            elif message.sticker:
-                await bot.send_sticker(uid, message.sticker.file_id)
+                await bot.send_document(uid, message.document.file_id, caption=message.caption or "")
             elif message.text:
                 await bot.send_message(uid, message.text, parse_mode="Markdown")
             else:
                 await bot.copy_message(uid, message.chat.id, message.message_id)
             ok += 1
-        except Exception as e:
+        except:
             fail += 1
-            log.warning(f"Broadcast fail [{uid}]: {e}")
-
         if (ok + fail) % 20 == 0:
             try: await status.edit_text(f"⏳ {ok+fail}/{len(user_ids)} — ✅{ok} ❌{fail}")
             except: pass
         await asyncio.sleep(0.05)
-
-    await status.edit_text(
-        f"📢 *Broadcast tugadi!*\n\n✅ {ok}\n❌ {fail}\n👥 Jami: {len(user_ids)}",
-        parse_mode="Markdown"
-    )
-    add_log(message.from_user.id, "broadcast", f"ok={ok},fail={fail}")
+    await status.edit_text(f"📢 *Tugadi!*\n\n✅ {ok}\n❌ {fail}", parse_mode="Markdown")
 
 # ─── ADMIN PANEL ───
 def admin_panel_kb():
@@ -1193,20 +1029,24 @@ async def cmd_admin(message: types.Message):
 @dp.callback_query(F.data == "adm_menu")
 async def cb_adm_menu(callback: types.CallbackQuery):
     if not is_admin(callback.from_user.id): return
-    await callback.message.edit_text("👨‍💼 *Admin panel*\n\nKerakli bo'limni tanlang:",
-                                      reply_markup=admin_panel_kb(), parse_mode="Markdown")
+    try:
+        await callback.message.edit_text("👨‍💼 *Admin panel*\n\nKerakli bo'limni tanlang:",
+                                          reply_markup=admin_panel_kb(), parse_mode="Markdown")
+    except: pass
 
 @dp.callback_query(F.data == "adm_stats")
 async def cb_adm_stats(callback: types.CallbackQuery):
     if not is_admin(callback.from_user.id): return
-    await callback.answer("⏳ Yuklanmoqda...")
+    await callback.answer("⏳")
     try:
-        ws_u  = _sheets.get("users");      total_users  = len(ws_u.col_values(2))-1  if ws_u  else 0
-        ws_a  = _sheets.get("auto");       total_auto   = len(ws_a.get_all_values())-1 if ws_a else 0
-        ws_s  = _sheets.get("saved");      total_saved  = len(ws_s.get_all_values())-1 if ws_s else 0
-        ws_l  = _sheets.get("logs")
+        con = get_db(); cur = con.cursor()
+        cur.execute("SELECT COUNT(*) FROM users"); total_users = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM auto_schedules"); total_auto = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM saved_schedules"); total_saved = cur.fetchone()[0]
         today = datetime.now(TASHKENT_TZ).strftime("%d.%m.%Y")
-        today_logs = sum(1 for d in (ws_l.col_values(1)[1:] if ws_l else []) if d.startswith(today))
+        cur.execute("SELECT COUNT(*) FROM logs WHERE vaqt LIKE ?", (f"{today}%",))
+        today_logs = cur.fetchone()[0]
+        con.close()
         text = (
             f"📊 *Statistika*\n\n"
             f"👥 Foydalanuvchilar: *{total_users}*\n"
@@ -1228,21 +1068,20 @@ async def cb_adm_info(callback: types.CallbackQuery):
     now    = datetime.now(TASHKENT_TZ)
     uptime = now - BOT_START_TIME
     d = uptime.days; h = uptime.seconds//3600; m = (uptime.seconds%3600)//60; s = uptime.seconds%60
-    jobs     = scheduler.get_jobs()
-    auto_j   = [j for j in jobs if j.id.startswith("auto_")]
+    jobs   = scheduler.get_jobs()
+    auto_j = [j for j in jobs if j.id.startswith("auto_")]
     text = (
         f"🤖 *Bot ma'lumoti*\n\n"
         f"⏱ Uptime: *{d}k {h}s {m}d {s}sek*\n"
         f"🕐 Vaqt: *{now.strftime('%d.%m.%Y %H:%M:%S')}*\n\n"
         f"⚙️ Scheduler:\n"
         f"  • Faol joblar: *{len(jobs)}*\n"
-        f"  • Avto jadval: *{len(auto_j)}* guruh\n"
-        f"  • Xona skaner: har kuni *05:30*\n\n"
+        f"  • Avto jadval: *{len(auto_j)}* guruh\n\n"
         f"📁 Fayllar:\n"
         f"  • talaba.json: *{'✅' if os.path.exists(TALABA_JSON) else '❌'}*\n"
         f"  • ustoz.json: *{'✅' if os.path.exists(USTOZ_JSON) else '❌'}*\n"
-        f"  • xonalar.json: *{'✅' if os.path.exists(XONALAR_JSON) else '❌'}*\n\n"
-        f"🗄 Google Sheets: *{'✅ Ulangan' if _sheets else '❌ Ulanmagan'}*"
+        f"  • xonalar.json: *{'✅' if os.path.exists(XONALAR_JSON) else '❌'}*\n"
+        f"  • bot.db: *{'✅' if os.path.exists(DB_FILE) else '❌'}*"
     )
     kb = InlineKeyboardBuilder()
     kb.row(types.InlineKeyboardButton(text="🔄 Yangilash", callback_data="adm_info"))
@@ -1252,8 +1091,7 @@ async def cb_adm_info(callback: types.CallbackQuery):
 @dp.callback_query(F.data == "adm_auto")
 async def cb_adm_auto(callback: types.CallbackQuery):
     if not is_admin(callback.from_user.id): return
-    await callback.answer("⏳")
-    rows = get_auto_schedules()
+    rows = db_get_autos()
     kb   = InlineKeyboardBuilder()
     if not rows:
         text = "📅 *Avto jadvallar*\n\n😔 Hech qaysi guruhda sozlanmagan."
@@ -1276,13 +1114,7 @@ async def cb_adm_delauto(callback: types.CallbackQuery):
     cid_str = callback.data.split("_")[2]
     job_id  = f"auto_{cid_str}"
     if scheduler.get_job(job_id): scheduler.remove_job(job_id)
-    ws = _sheets.get("auto")
-    if ws:
-        try:
-            ids = ws.col_values(1)
-            if cid_str in ids: ws.delete_rows(ids.index(cid_str)+1)
-        except Exception as e:
-            log.error(f"delauto: {e}")
+    db_delete_auto(cid_str)
     await callback.answer("✅ O'chirildi!", show_alert=True)
     await cb_adm_auto(callback)
 
@@ -1296,24 +1128,24 @@ async def cb_adm_scan(callback: types.CallbackQuery):
     if not is_admin(callback.from_user.id): return
     await callback.message.edit_text("⏳ Xonalar skanerlash boshlandi...\nBir necha daqiqa olishi mumkin.")
     await job_scan_free_rooms()
-    count = len(load_json(XONALAR_JSON))
     kb = InlineKeyboardBuilder()
     kb.row(types.InlineKeyboardButton(text="⬅️ Orqaga", callback_data="adm_menu"))
-    await callback.message.edit_text(f"✅ Tugadi! {count} ta xona tekshirildi.", reply_markup=kb.as_markup())
+    await callback.message.edit_text("✅ Skanerlash tugadi!", reply_markup=kb.as_markup())
 
 @dp.message(Command("scan_rooms"))
 async def cmd_scan_rooms(message: types.Message):
     if not is_admin(message.from_user.id): return
     await message.answer("⏳ Skanerlash boshlandi...")
     await job_scan_free_rooms()
-    await message.answer(tr("free_updated", message.chat.id, count=len(load_json(XONALAR_JSON))))
+    count = len(load_json(XONALAR_JSON))
+    await message.answer(tr("free_updated", message.chat.id, count=count))
 
 # ═══════════════════════════════════════════
 # M A I N
 # ═══════════════════════════════════════════
 async def main():
     log.info("Bot ishga tushmoqda...")
-    init_sheets()
+    init_db()
     restore_auto_schedules()
     scheduler.add_job(job_scan_free_rooms, "cron", hour=5, minute=30, id="scan_rooms")
     if not scheduler.running:
